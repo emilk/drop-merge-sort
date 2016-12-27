@@ -12,6 +12,9 @@ use std::path::Path;
 extern crate rand;
 use rand::{Rng, SeedableRng, StdRng};
 
+extern crate pbr;
+use pbr::ProgressBar;
+
 extern crate quickersort;
 extern crate time;
 
@@ -162,6 +165,8 @@ fn time_sort_ms<Sorter>(unsorted: &Vec<Element>, mut sorter: Sorter) -> (f32, Ve
 }
 
 fn generate_comparison_data(rng: &mut rand::StdRng, length: usize) {
+	let mut pb = ProgressBar::new(1000);
+	pb.message("Benchmarking against std::sort and quickersort: ");
 	let mut std_file     = File::create(&Path::new("data/std_sort.data")).unwrap();
 	let mut quicker_file = File::create(&Path::new("data/quicker_sort.data")).unwrap();
 	let mut drop_file    = File::create(&Path::new("data/drop_merge_sort.data")).unwrap();
@@ -179,10 +184,13 @@ fn generate_comparison_data(rng: &mut rand::StdRng, length: usize) {
 		write!(std_file,     "{} {}\n", randomization_factor * 100.0, std_duration_ms).unwrap();
 		write!(quicker_file, "{} {}\n", randomization_factor * 100.0, quicker_duration_ms).unwrap();
 		write!(drop_file,    "{} {}\n", randomization_factor * 100.0, drop_duration_ms).unwrap();
+		pb.inc();
 	}
 }
 
 fn generate_speedup_data(rng: &mut rand::StdRng, length: usize) {
+	let mut pb = ProgressBar::new(250);
+	pb.message("Benchmarking speedup over quickersort: ");
 	let mut file = File::create(&Path::new("data/speedup_over_quickersort.data")).unwrap();
 
 	for i in 0i32..251i32 {
@@ -194,6 +202,7 @@ fn generate_speedup_data(rng: &mut rand::StdRng, length: usize) {
 		assert_eq!(quicker_sorted, drop_sorted);
 
 		write!(file, "{} {}\n", randomization_factor * 100.0, quicker_duration_ms / drop_duration_ms).unwrap();
+		pb.inc();
 	}
 }
 
@@ -250,6 +259,6 @@ fn main() {
 	bench_evil();
 	let seed: &[_] = &[0];
 	let mut rng: StdRng = SeedableRng::from_seed(seed);
-	generate_comparison_data(&mut rng, 1000000); // ~15 min runtime
 	generate_speedup_data(&mut rng, 1000000); // ~1 min runtime
+	generate_comparison_data(&mut rng, 1000000); // ~15 min runtime
 }

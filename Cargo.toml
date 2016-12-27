@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Emil Ernerfeldt <emilernerfeldt@gmail.com>"]
 
 [dependencies]
+pbr = "1.0.0-alpha.2"
 quickersort = "2.2.0"
 rand = "0.3.15"
 time = "0.1.35"
