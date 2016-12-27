@@ -29,18 +29,18 @@ fn drop_merge_sort_by<T, F>(list: &mut [T], mut compare: F)
 	if list.len() < 2 { return; }
 
 	// ------------------------------------------------------------------------
-	// First step: heuristically find the longest non-decreasing subsequence (LNDS).
-	// This is done using the methods described in
+	// First step: heuristically find the Longest Nondecreasing Subsequence (LNS).
+	// This is done using the memory-method described in
 	// "Item Retention Improvements to Dropsort, a Lossy Sorting Algorithm"
 	// by Abram Jackson and Ryan McCulloch
 	// (http://micsymposium.org/mics_2011_proceedings/mics2011_submission_13.pdf)
-	// The LNDS is shifted into list[..write] while list[write..] will be left unchanged.
-	// Elements not part of the LNDS will be put in the "dropped" vector.
+	// The LNS is shifted into list[..write] while list[write..] will be left unchanged.
+	// Elements not part of the LNS will be put in the "dropped" vector.
 
 	let mut dropped = Vec::new();
 	let mut num_dropped_in_row = 0;
-	let mut write = 0;
-	let mut read  = 0;
+	let mut write = 0; // Index of the last kept element.
+	let mut read  = 0; // Index of the input stream.
 	const RECENCY : usize = 8; // Higher = more resilient against long stretches of noise.
 
 	while read < list.len() {
@@ -55,15 +55,17 @@ fn drop_merge_sort_by<T, F>(list: &mut [T], mut compare: F)
 				We accepted something num_dropped_in_row elements back that made us drop all RECENCY subsequent items.
 				Accepting that element was obviously a mistake - so let's undo it!
 
-				Example problem (RECENCY = 3):
-					0 1 10 3 4 5 6   // 10 was accepted. When we get to 5 we reach num_dropped_in-row == RECENCY
+				Example problem (RECENCY = 3):    0 1 12 3 4 5 6
+					0 1 12 is accepted. 3, 4, 5 will be rejected because they are larger than the last kept item (12).
+					When we get to 5 we reach num_dropped_in_row == RECENCY.
+					This will trigger an undo where we drop the 12.
+					When we again go to 3, we will keep it because it is larger than the last kept item (1).
 
-				Example worst-case (RECENCY = 3):
-					...100 101 102 103 104 1 2 3 4 5 ....
-						100-104 was accepted. When we get to 3 we reach num_dropped_in-row == RECENCY
-						We drop 104 and reset the read by RECENCY. We restart, and then we drop again.
-						This can lead us to backtracking RECENCY number of elements
-						as many times as the leading non-decreasing subsequence is long.
+				Example worst-case (RECENCY = 3):   ...100 101 102 103 104 1 2 3 4 5 ....
+					100-104 is accepted. When we get to 3 we reach num_dropped_in_row == RECENCY.
+					We drop 104 and reset the read by RECENCY. We restart, and then we drop again.
+					This can lead us to backtracking RECENCY number of elements
+					as many times as the leading non-decreasing subsequence is long.
 				*/
 
 				// Back up and recheck the elements we previously dropped:
