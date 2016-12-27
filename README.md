@@ -50,7 +50,7 @@ function generate_test_data(length, randomization_factor) -> Vec {
 }
 ```
 
-Comparing this to the default Rust sorting algorithm ([Vec::sort](https://doc.rust-lang.org/beta/std/vec/struct.Vec.html#method.sort), a [stable sorting algorithm](https://github.com/rust-lang/rust/pull/38192)) and [dual-pivot quicksort](https://github.com/notriddle/quickersort) for different randomization factors:
+Comparing this to the default Rust sorting algorithm ([Vec::sort](https://doc.rust-lang.org/beta/std/vec/struct.Vec.html#method.sort), a [stable sorting algorithm](https://github.com/rust-lang/rust/pull/38192)) and [dual-pivot quicksort](https://github.com/notriddle/quickersort) for different randomization factors. The compiler was `rustc 1.15.0-nightly (71c06a56a 2016-12-18)`.
 
 ![Comparing Drop-Merge sort](images/comparisons.png)
 
@@ -60,7 +60,7 @@ Here is another view of the data for 0-25% randomization:
 
 ![Speedup over quicksort](images/speedup.png)
 
-Here we can see that we get 4x speedup over quicksort when 99.5% of the elements are in order, and a 2x speedup when 93% of the elements are in order.
+Here we can see that we get 4x speedup over quicksort when 99% of the elements are in order, and a 2x speedup when 90% of the elements are in order.
 
 # Comparison to other adaptive sorting algorithms
 An adaptive sorting algorithm is one that can exploit existing order. These algorithms ranges from the complicated to the simple.
@@ -76,7 +76,7 @@ Drop-Merge sort is not stable, which means it will not keep the order of equal e
 
 Drop-Merge sort does not sort [in-situ](https://en.wikipedia.org/wiki/In-place_algorithm), but will use `O(K)` extra memory, where `K` is the number of elements out-of-order.
 
-There is a worst-case scenario where all elements are in order, except for the last few who are smaller than all the preceding ones. In this case the algorithm will back-track and drop all the initial elements and keep only the last. The behavior of this is still `O(N⋅log(N))` comparisons, but it will use `O(N)` extra memory and be around 4x slower than the standard Rust sort. We could potentially improve this by detecting large back-tracking and handle it by either simply stopping the back-tracking, or maybe by dividing the input at the problem boundary and recursing, before finally merging the sorted sub-ranges.
+There is a worst-case scenario where all elements are in order, except for the last few who are smaller than all the preceding ones. In this case the algorithm will back-track and drop all the initial elements and keep only the last. The behavior of this is still `O(N⋅log(N))` comparisons, but it will use `O(N)` extra memory and be around 6x slower than the standard Rust sort. We could potentially improve this by detecting large back-tracking and handle it by either simply stopping the back-tracking, or maybe by dividing the input at the problem boundary and recursing, before finally merging the sorted sub-ranges.
 
 The algorithms uses `recency=8` which means it can handle no more than 8 outliers in a row. This number was chosen by experimentation, and could perhaps be adjusted dynamically for increased performance.
 
