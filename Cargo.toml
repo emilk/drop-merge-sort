@@ -1,0 +1,9 @@
+[package]
+name = "drop_merge_sort"
+version = "0.1.0"
+authors = ["Emil Ernerfeldt <emilernerfeldt@gmail.com>"]
+
+[dependencies]
+quickersort = "2.2.0"
+rand = "0.3.15"
+time = "0.1.35"
