@@ -102,22 +102,15 @@ fn drop_merge_sort_by<T, F>(list: &mut [T], mut compare: F)
 
 	let mut back = list.len();
 
-	while 0 < back {
-		if let Some(&last_dropped) = dropped.last() {
-			if 0 < write && compare(&last_dropped, &list[write - 1]) == Ordering::Less {
-				list[back - 1] = list[write - 1];
-				write -= 1;
-			} else {
-				list[back - 1] = last_dropped;
-				dropped.pop();
-			}
-		} else {
-			// Nothing left in "dropped" - we are done!
-			assert!(back == write);
-			break;
+	while let Some(&last_dropped) = dropped.last() {
+		while 0 < write && compare(&last_dropped, &list[write - 1]) == Ordering::Less {
+			list[back - 1] = list[write - 1];
+			back -= 1;
+			write -= 1;
 		}
-
+		list[back - 1] = last_dropped;
 		back -= 1;
+		dropped.pop();
 	}
 }
 
