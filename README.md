@@ -81,3 +81,6 @@ There is a worst-case scenario where all elements are in order, except for the l
 The algorithms uses `recency=8` which means it can handle no more than 8 outliers in a row. This number was chosen by experimentation, and could perhaps be adjusted dynamically for increased performance.
 
 Another improvement would be to detect cases where the input is does not conform to the working hypothesis of being partially-sorted.
+
+# Other implementations
+* C++: [https://github.com/adrian17/cpp-drop-merge-sort](https://github.com/adrian17/cpp-drop-merge-sort)
