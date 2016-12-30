@@ -186,14 +186,17 @@ fn time_sort_ms<Sorter>(unsorted: &Vec<Element>, mut sorter: Sorter) -> (f32, Ve
 }
 
 fn generate_comparison_data(rng: &mut rand::StdRng, length: usize) {
-	let mut pb = ProgressBar::new(1000);
-	pb.message("Benchmarking against std::sort and quickersort: ");
-	let mut std_file     = File::create(&Path::new("data/std_sort.data")).unwrap();
-	let mut quicker_file = File::create(&Path::new("data/quicker_sort.data")).unwrap();
-	let mut drop_file    = File::create(&Path::new("data/drop_merge_sort.data")).unwrap();
+	let num_samples : u64 = 1000;
 
-	for i in 0i32..1001i32 {
-		let randomization_factor = (i as f32) / 1000.0;
+	let mut pb = ProgressBar::new(num_samples);
+	pb.message("Benchmarking: ");
+	let mut std_file         = File::create(&Path::new("data/std_sort.data")).unwrap();
+	let mut quicker_file     = File::create(&Path::new("data/quicker_sort.data")).unwrap();
+	let mut drop_file        = File::create(&Path::new("data/drop_merge_sort.data")).unwrap();
+	let mut speedup_file     = File::create(&Path::new("data/speedup_over_quickersort.data")).unwrap();
+
+	for i in 0i32..(num_samples as i32 + 1) {
+		let randomization_factor = (i as f32) / (num_samples as f32);
 		let vec = generate_test_data(rng, length, randomization_factor);
 		let (std_duration_ms,     std_sorted)     = time_sort_ms(&vec, |x| x.sort());
 		let (quicker_duration_ms, quicker_sorted) = time_sort_ms(&vec, |x| quickersort::sort(x));
@@ -205,24 +208,8 @@ fn generate_comparison_data(rng: &mut rand::StdRng, length: usize) {
 		write!(std_file,     "{} {}\n", randomization_factor * 100.0, std_duration_ms).unwrap();
 		write!(quicker_file, "{} {}\n", randomization_factor * 100.0, quicker_duration_ms).unwrap();
 		write!(drop_file,    "{} {}\n", randomization_factor * 100.0, drop_duration_ms).unwrap();
-		pb.inc();
-	}
-}
+		write!(speedup_file, "{} {}\n", randomization_factor * 100.0, quicker_duration_ms / drop_duration_ms).unwrap();
 
-fn generate_speedup_data(rng: &mut rand::StdRng, length: usize) {
-	let mut pb = ProgressBar::new(250);
-	pb.message("Benchmarking speedup over quickersort: ");
-	let mut file = File::create(&Path::new("data/speedup_over_quickersort.data")).unwrap();
-
-	for i in 0i32..251i32 {
-		let randomization_factor = (i as f32) / 1000.0;
-		let vec = generate_test_data(rng, length, randomization_factor);
-		let (quicker_duration_ms, quicker_sorted) = time_sort_ms(&vec, |x| quickersort::sort(x));
-		let (drop_duration_ms,    drop_sorted)    = time_sort_ms(&vec, |x| drop_merge_sort(x));
-
-		assert_eq!(quicker_sorted, drop_sorted);
-
-		write!(file, "{} {}\n", randomization_factor * 100.0, quicker_duration_ms / drop_duration_ms).unwrap();
 		pb.inc();
 	}
 }
@@ -280,6 +267,5 @@ fn main() {
 	bench_evil();
 	let seed: &[_] = &[0];
 	let mut rng: StdRng = SeedableRng::from_seed(seed);
-	generate_speedup_data(&mut rng, 1000000); // ~1 min runtime
 	generate_comparison_data(&mut rng, 1000000); // ~15 min runtime
 }
