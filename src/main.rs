@@ -42,13 +42,41 @@ fn drop_merge_sort_by<T, F>(list: &mut [T], mut compare: F)
 
 	let mut dropped = Vec::new();
 	let mut num_dropped_in_row = 0;
-	let mut write = 0; // Index of the last kept element.
+	let mut write = 0; // Index of where to write the next element to keep.
 	let mut read  = 0; // Index of the input stream.
-	const RECENCY : usize = 8; // Higher = more resilient against long stretches of noise.
+	// Invariant: write <= read
+
+	/// This speeds up well-ordered input by quite a lot.
+	const DOUBLE_COMPARISONS : bool = true;
+
+	/// Low RECENCY = faster when there is low randomness (a lot of order).
+	/// High RECENCY = more resilient against long stretches of noise.
+	/// If RECENCY is too small we are more dependent on nice data/luck.
+	const RECENCY : usize = 8;
 
 	while read < list.len() {
-		if 0 < write && compare(&list[read], &list[write - 1]) == Ordering::Less {
-			// Out of order. "Drop" the element at read:
+		if 1 <= write && compare(&list[read], &list[write - 1]) == Ordering::Less {
+			// The next element is smaller than the last stored one.
+			// The question is - should we drop the new element, or was accepting the previous element a mistake?
+
+			/*
+			   Check this situation:
+			   0 1 2 3 9 5 6 7  (the 9 is a one-off)
+			           | |
+			           | read
+			           write - 1
+				Checking this improves performance because we catch common problems earlier (without back-tracking).
+			*/
+			if DOUBLE_COMPARISONS && num_dropped_in_row == 0 &&
+			   2 <= write && compare(&list[read], &list[write - 2]) != Ordering::Less
+			{
+				// Quick undo: drop previously accepted element, and overwrite with new one:
+				dropped.push(list[write - 1]);
+				list[write - 1] = list[read];
+				read += 1;
+				continue;
+			}
+
 			if num_dropped_in_row < RECENCY {
 				dropped.push(list[read]);
 				read += 1;
