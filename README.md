@@ -1,7 +1,7 @@
 # Abstract
 This is an implementation of a novel [adaptive sorting](https://en.wikipedia.org/wiki/Adaptive_sort) algorithm optimized for nearly-sorted data. Drop-Merge sort is especially useful for when >85% of the data is already in-order, and the unsorted elements are evenly distributed. An example use-case would be re-sorting an already sorted list after minor modifications.
 
-Drop-Merge sort is 2-5 times faster than quicksort in cases where >90% of the data is already in order, while being considerably simpler to implement than other adaptive sorting algorithms.
+Drop-Merge sort is 2-5 times faster than quicksort in cases where >80% of the data is already in order, while being considerably simpler to implement than other adaptive sorting algorithms.
 
 With `N` elements in the list where `K` elements are out-of-order, Drop-Merge sort performs `O(N + K⋅log(K))` comparisons and use `O(K)` extra memory.
 
@@ -52,15 +52,16 @@ function generate_test_data(length, randomization_factor) -> Vec {
 
 Comparing this to the default Rust sorting algorithm ([Vec::sort](https://doc.rust-lang.org/beta/std/vec/struct.Vec.html#method.sort), a [stable sorting algorithm](https://github.com/rust-lang/rust/pull/38192)) and [dual-pivot quicksort](https://github.com/notriddle/quickersort) for different randomization factors. The compiler was `rustc 1.15.0-nightly (71c06a56a 2016-12-18)`.
 
-![Comparing Drop-Merge sort](images/comparisons.png)
+![Comparing Drop-Merge sort](images/comparisons_i32.png)
+![Comparing Drop-Merge sort](images/comparisons_string.png)
 
-We can see that all three algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the randomization factor is less than 25% (more than 75% of the elements are in order). It also behaves well when the data becomes more random, and even when the input data is fully random it is only ~30% slower than quicksort.
+We can see that all three algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the randomization factor is less than 30% (more than 70% of the elements are in order). It also behaves well when the data becomes more random, and even when the input data is fully random it is only ~30% slower than quicksort.
 
-Here is another view of the data for 0-25% randomization:
+Here is another view of the data for 0-50% randomization:
 
-![Speedup over quicksort](images/speedup.png)
+![Speedup over quicksort](images/speedup_i32_dmsort_move.png)
 
-Here we can see that we get 4x speedup over quicksort when 99% of the elements are in order, and a 2x speedup when 90% of the elements are in order.
+Here we can see that we get 5x speedup over quicksort when 99% of the elements are in order, and a 2x speedup when 80% of the elements are in order.
 
 # Comparison to other adaptive sorting algorithms
 An adaptive sorting algorithm is one that can exploit existing order. These algorithms ranges from the complicated to the simple.

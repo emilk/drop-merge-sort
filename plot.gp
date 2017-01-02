@@ -13,8 +13,10 @@ set style line 12 lc rgb '#808080' lt 0 lw 1
 set grid back ls 12
 
 set style line 1 lc rgb '#AA0000' pt 0 ps 1 lt 1 lw 2
-set style line 2 lc rgb '#00AA00' pt  0 ps 1 lt 1 lw 2
-set style line 3 lc rgb '#0000AA' pt  0 ps 1 lt 1 lw 2
+set style line 2 lc rgb '#00AA00' pt 0 ps 1 lt 1 lw 2
+set style line 3 lc rgb '#0000AA' pt 0 ps 1 lt 1 lw 2
+set style line 4 lc rgb '#800080' pt 0 ps 1 lt 1 lw 2
+set style line 5 lc rgb '#606060' pt 0 ps 1 lt 1 lw 2
 
 set key bottom
 
@@ -22,24 +24,57 @@ set xlabel "Randomization"
 set xtics format "%.0f%%"
 
 # Generate the comparison graphs:
-set output "images/comparisons.png"
-set ylabel "ms to sort a million semi-ordered integers"
 set xrange [0:100]
 set yrange [0:80]
-plot 'data/std_sort.data'        u 1:2 t 'Vec::sort'       w lp ls 1, \
-     'data/quicker_sort.data'    u 1:2 t 'Quicksort'       w lp ls 2, \
-     'data/drop_merge_sort.data' u 1:2 t 'Drop-Merge sort' w lp ls 3
+set output "images/comparisons_i32.png"
+set title "Sorting one million semi-ordered 32-bit integers"
+set ylabel "ms"
+plot 'data/i32/std_sort.data'            u 1:2 t 'Vec::sort'               w lp ls 1, \
+     'data/i32/quicker_sort.data'        u 1:2 t 'Quicksort'               w lp ls 2, \
+     'data/i32/dmsort_move_sort.data'    u 1:2 t 'Drop-Merge sort'         w lp ls 3
+
+set output "images/comparisons_string.png"
+set title "Sorting 100 000 semi-ordered 100-character strings"
+set ylabel "ms"
+plot 'data/string/std_sort.data'       u 1:2 t 'Vec::sort'        w lp ls 1, \
+     'data/string/quicker_sort.data'   u 1:2 t 'Quicksort'        w lp ls 2, \
+     'data/string/drop_merge_sort.data' u 1:2 t 'Drop-Merge sort' w lp ls 4
 
 # Generate the speedup graph:
-set output "images/speedup.png"
-set ylabel "How much faster drop-merge sort is over quicksort"
-set xrange [0:25]
-set yrange [0:6]
+set xrange [0:50]
+set yrange [0:8]
 set nokey
-plot 'data/speedup_over_quickersort.data' u 1:2 t 'speedup' w lp ls 1
+
+set output "images/speedup_i32_dmsort_copy.png"
+set title "Speedup over fastest competitor sorting one million 32-bit integers"
+set ylabel "speedup factor"
+plot 'data/i32/dmsort_copy_speedup.data' u 1:2 t 'speedup' w lp ls 1
+
+set output "images/speedup_i32_dmsort_move.png"
+set title "Speedup over fastest competitor sorting one million 32-bit integers"
+set ylabel "speedup factor"
+plot 'data/i32/dmsort_move_speedup.data' u 1:2 t 'speedup' w lp ls 1
+
+set output "images/speedup_string.png"
+set title "Speedup over fastest competitor sorting 100 000 semi-ordered 100-character strings"
+set ylabel "speedup factor"
+plot 'data/string/speedup_over_quickersort.data' u 1:2 t 'speedup' w lp ls 1
+
+# Generate the num_dropped graph:
+set output "images/num_dropped.png"
+set title "How many out-of-order elements where dropped"
+set ylabel "percentage"
+set xtics format "%.0f%%"
+set ytics format "%.0f%%"
+set xrange [0:100]
+set yrange [0:100]
+set term pngcairo size 640, 640
+set nokey
+plot 'data/i32/num_dropped.data' u 1:2 t 'num_dropped' w lp ls 1
 
 # Generate a bar-graph for an example almost-sorted data:
 set output "images/example.png"
+unset title
 unset xrange
 unset yrange
 set term pngcairo size 320, 240
