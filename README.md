@@ -1,4 +1,4 @@
-[Rust crate documentation](doc/dmsort/index.html)
+[Rust crate documentation](https://emilk.github.io/drop-merge-sort/dmsort/index.html)
 
 # Abstract
 This is an implementation of a novel [adaptive sorting](https://en.wikipedia.org/wiki/Adaptive_sort) algorithm optimized for nearly-sorted data. Drop-Merge sort is especially useful for when >80% of the data is already in-order, and the unsorted elements are evenly distributed. An example use-case would be re-sorting an already sorted list after minor modifications.

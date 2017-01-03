@@ -6,7 +6,7 @@ description = "Fast adaptive sorting for when most of your data is already in or
 keywords = ["sorting", "sort", "adaptive"]
 license = "Public Domain"
 repository = "https://github.com/emilk/drop-merge-sort"
-documentation = "https://github.com/emilk/drop-merge-sort/rustdoc/dmsort/index.html"
+documentation = "https://emilk.github.io/drop-merge-sort/dmsort/index.html"
 readme = "README.md"
 
 [lib]
