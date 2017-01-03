@@ -91,5 +91,4 @@ The algorithms uses `recency=8` which means it can handle no more than 8 outlier
 * C++: [https://github.com/adrian17/cpp-drop-merge-sort](https://github.com/adrian17/cpp-drop-merge-sort)
 
 # TODO
-* Generate documentation
 * Publish on Cargo
