@@ -24,16 +24,26 @@ extern crate time;
 /// This speeds up well-ordered input by quite a lot.
 const DOUBLE_COMPARISONS : bool = true;
 
-/// Low RECENCY = faster when there is low randomness (a lot of order).
+/// Low RECENCY = faster when there is low disorder (a lot of order).
 /// High RECENCY = more resilient against long stretches of noise.
 /// If RECENCY is too small we are more dependent on nice data/luck.
 const RECENCY : usize = 8;
 
-/// Show fastest of BENCH_BEST_OF:
-const BENCH_BEST_OF : usize = 4;
+/// Break early if we notice that the input is not ordered enough.
+const EARLY_OUT : bool = true;
 
-/// Sample the randomness interval this much:
-const BENCH_SAMPLES : u64 = 500;
+/// Test for early-out when we have processed len / EARLY_OUT_TEST_AT elements.
+const EARLY_OUT_TEST_AT : usize = 4;
+
+/// If more than this percentage of elements have been dropped, we abort.
+const EARLY_OUT_DISORDER_FRACTION : f32 = 0.70;
+
+/// Show fastest of BENCH_BEST_OF:
+const BENCH_BEST_OF : usize = 5;
+
+static BENCH_RESOLUTION_START  : usize = 20;
+static BENCH_RESOLUTION_END    : usize =  99 * 5;
+static BENCH_RESOLUTION_CUTOFF : f32   =   0.01;
 
 // ----------------------------------------------------------------------------
 
@@ -55,6 +65,18 @@ fn dmsort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	let mut read  = 0; // Index of the input stream.
 
 	while read < slice.len() {
+		if EARLY_OUT
+			&& read == slice.len() / EARLY_OUT_TEST_AT
+			&& dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION {
+			// We have seen a lot of the elements and dropped a lot of them.
+			// This doesn't look good. Abort.
+			for i in 0..dropped.len() {
+				slice[write + i] = dropped[i];
+			}
+			slice.sort_by(|a, b| compare(a, b));
+			return dropped.len() * EARLY_OUT_TEST_AT; // Just an estimate.
+		}
+
 		if 1 <= write && compare(&slice[read], &slice[write - 1]) == Ordering::Less {
 			// The next element is smaller than the last stored one.
 			// The question is - should we drop the new element, or was accepting the previous element a mistake?
@@ -132,7 +154,6 @@ fn dmsort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	// We now want to merge these into "slice".
 	// Let us do that from the back, putting the largest elements in place first:
 
-	let merge_start_ns = time::precise_time_ns();
 	let mut back = slice.len();
 
 	while let Some(&last_dropped) = dropped.last() {
@@ -220,6 +241,17 @@ fn dmsort_move_by<T, F>(slice: &mut [T], mut compare: F)
 	let mut read = 0;
 
 	while read < s.slice.len() {
+		if EARLY_OUT
+			&& read == s.slice.len() / EARLY_OUT_TEST_AT
+			&& s.dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION {
+			// We have seen a lot of the elements and dropped a lot of them.
+			// This doesn't look good. Abort.
+			ptr::copy_nonoverlapping(s.dropped.as_ptr(), &mut s.slice[s.write], s.dropped.len());
+			s.dropped.set_len(0);
+			s.slice.sort_by(|a, b| compare(a, b));
+			return;
+		}
+
 		if 1 <= s.write
 			&& compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 1)) == Ordering::Less
 		{
@@ -320,11 +352,11 @@ fn dmsort<T: Ord>(slice: &mut [T])
 
 type Integer = i32;
 
-/// Returns a mostly-sorted array with randomization_factor fraction of elements with random values.
-fn generate_integers(rng: &mut rand::StdRng, length: usize, randomization_factor: f32) -> Vec<Integer> {
+/// Returns a mostly-sorted array with disorder_factor fraction of elements with random values.
+fn generate_integers(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<Integer> {
 	let mut result = Vec::with_capacity(length);
 	for i in 0..length {
-		if rng.next_f32() < randomization_factor {
+		if rng.next_f32() < disorder_factor {
 			result.push(rng.gen_range(0 as Integer, length as Integer));
 		} else {
 			result.push(i as Integer);
@@ -333,8 +365,8 @@ fn generate_integers(rng: &mut rand::StdRng, length: usize, randomization_factor
 	result
 }
 
-fn generate_strings(rng: &mut rand::StdRng, length: usize, randomization_factor: f32) -> Vec<String> {
-	generate_integers(rng, length, randomization_factor).iter().map(|&x| format!("{:0100}", x)).collect()
+fn generate_strings(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<String> {
+	generate_integers(rng, length, disorder_factor).iter().map(|&x| format!("{:0100}", x)).collect()
 }
 
 fn time_sort_ms<T: Clone, Sorter>(unsorted: &Vec<T>, mut sorter: Sorter) -> (f32, Vec<T>)
@@ -357,8 +389,21 @@ fn time_sort_ms<T: Clone, Sorter>(unsorted: &Vec<T>, mut sorter: Sorter) -> (f32
 	(best_ns.unwrap() as f32 / 1000000.0, sorted)
 }
 
+/// Benchmark at these disorders:
+fn get_bench_disorders() -> Vec<f32> {
+	fn remap(x: usize, in_min: usize, in_max: usize, out_min: f32, out_max: f32) -> f32 {
+		out_min + (out_max - out_min) * ((x - in_min) as f32) / ((in_max - in_min) as f32)
+	}
+
+	return
+		(0..BENCH_RESOLUTION_START).map(    |x| remap(x, 0, BENCH_RESOLUTION_START, 0.0, BENCH_RESOLUTION_CUTOFF)).chain(
+		(0..(BENCH_RESOLUTION_END + 1)).map(|x| remap(x, 0, BENCH_RESOLUTION_END,   BENCH_RESOLUTION_CUTOFF, 1.0))
+		).collect();
+}
+
 fn generate_comparison_data_i32(rng: &mut rand::StdRng, length: usize) {
-	let mut pb = ProgressBar::new(BENCH_SAMPLES);
+	let bench_disorders = get_bench_disorders();
+	let mut pb = ProgressBar::new(bench_disorders.len() as u64);
 	pb.message("Benchmarking integers: ");
 	let mut std_file             = File::create(&Path::new("data/i32/std_sort.data")).unwrap();
 	let mut quicker_file         = File::create(&Path::new("data/i32/quicker_sort.data")).unwrap();
@@ -368,9 +413,8 @@ fn generate_comparison_data_i32(rng: &mut rand::StdRng, length: usize) {
 	let mut move_speedup_file    = File::create(&Path::new("data/i32/dmsort_move_speedup.data")).unwrap();
 	let mut num_dropped_file     = File::create(&Path::new("data/i32/num_dropped.data")).unwrap();
 
-	for i in 0..(BENCH_SAMPLES + 1) {
-		let randomization_factor = (i as f32) / (BENCH_SAMPLES as f32);
-		let vec = generate_integers(rng, length, randomization_factor);
+	for disorder_factor in bench_disorders {
+		let vec = generate_integers(rng, length, disorder_factor);
 		let (std_duration_ms,            std_sorted)            = time_sort_ms(&vec, |x| x.sort());
 		let (quicker_duration_ms,        quicker_sorted)        = time_sort_ms(&vec, |x| quickersort::sort(x));
 		let (dmsort_copy_duration_ms,    dmsort_copy_sorted)    = time_sort_ms(&vec, |x| {dmsort_copy(x);    ()});
@@ -382,18 +426,18 @@ fn generate_comparison_data_i32(rng: &mut rand::StdRng, length: usize) {
 		assert_eq!(dmsort_move_sorted,    std_sorted);
 		assert_eq!(quicker_sorted,        std_sorted);
 
-		write!(std_file,             "{} {}\n", randomization_factor * 100.0, std_duration_ms).unwrap();
-		write!(quicker_file,         "{} {}\n", randomization_factor * 100.0, quicker_duration_ms).unwrap();
-		write!(dmsort_copy_file,     "{} {}\n", randomization_factor * 100.0, dmsort_copy_duration_ms).unwrap();
-		write!(dmsort_move_file,     "{} {}\n", randomization_factor * 100.0, dmsort_move_duration_ms).unwrap();
-		write!(copy_speedup_file,    "{} {}\n", randomization_factor * 100.0, fastest_competitor_ms / dmsort_copy_duration_ms).unwrap();
-		write!(move_speedup_file,    "{} {}\n", randomization_factor * 100.0, fastest_competitor_ms / dmsort_move_duration_ms).unwrap();
+		write!(std_file,             "{} {}\n", disorder_factor * 100.0, std_duration_ms).unwrap();
+		write!(quicker_file,         "{} {}\n", disorder_factor * 100.0, quicker_duration_ms).unwrap();
+		write!(dmsort_copy_file,     "{} {}\n", disorder_factor * 100.0, dmsort_copy_duration_ms).unwrap();
+		write!(dmsort_move_file,     "{} {}\n", disorder_factor * 100.0, dmsort_move_duration_ms).unwrap();
+		write!(copy_speedup_file,    "{} {}\n", disorder_factor * 100.0, fastest_competitor_ms / dmsort_copy_duration_ms).unwrap();
+		write!(move_speedup_file,    "{} {}\n", disorder_factor * 100.0, fastest_competitor_ms / dmsort_move_duration_ms).unwrap();
 
 		{
 			let mut temp = vec.clone();
 			let num_dropped_in_row = dmsort_copy(&mut temp);
 			let num_dropped = (num_dropped_in_row as f64) / (temp.len() as f64);
-			write!(num_dropped_file, "{} {}\n", randomization_factor * 100.0, num_dropped * 100.0).unwrap();
+			write!(num_dropped_file, "{} {}\n", disorder_factor * 100.0, num_dropped * 100.0).unwrap();
 		}
 
 		pb.inc();
@@ -401,16 +445,16 @@ fn generate_comparison_data_i32(rng: &mut rand::StdRng, length: usize) {
 }
 
 fn generate_comparison_data_string(rng: &mut rand::StdRng, length: usize) {
-	let mut pb = ProgressBar::new(BENCH_SAMPLES);
+	let bench_disorders = get_bench_disorders();
+	let mut pb = ProgressBar::new(bench_disorders.len() as u64);
 	pb.message("Benchmarking strings: ");
 	let mut std_file        = File::create(&Path::new("data/string/std_sort.data")).unwrap();
 	let mut quicker_file    = File::create(&Path::new("data/string/quicker_sort.data")).unwrap();
 	let mut drop_merge_file = File::create(&Path::new("data/string/drop_merge_sort.data")).unwrap();
 	let mut speedup_file    = File::create(&Path::new("data/string/speedup_over_quickersort.data")).unwrap();
 
-	for i in 0..(BENCH_SAMPLES + 1) {
-		let randomization_factor = (i as f32) / (BENCH_SAMPLES as f32);
-		let vec = generate_strings(rng, length, randomization_factor);
+	for disorder_factor in bench_disorders {
+		let vec = generate_strings(rng, length, disorder_factor);
 		let (std_duration_ms,        std_sorted)        = time_sort_ms(&vec, |x| x.sort());
 		let (quicker_duration_ms,    quicker_sorted)    = time_sort_ms(&vec, |x| quickersort::sort(x));
 		let (drop_merge_duration_ms, drop_merge_sorted) = time_sort_ms(&vec, |x| dmsort(x));
@@ -420,10 +464,10 @@ fn generate_comparison_data_string(rng: &mut rand::StdRng, length: usize) {
 		assert_eq!(std_sorted, drop_merge_sorted);
 		assert_eq!(quicker_sorted, drop_merge_sorted);
 
-		write!(std_file,        "{} {}\n", randomization_factor * 100.0, std_duration_ms).unwrap();
-		write!(quicker_file,    "{} {}\n", randomization_factor * 100.0, quicker_duration_ms).unwrap();
-		write!(drop_merge_file, "{} {}\n", randomization_factor * 100.0, drop_merge_duration_ms).unwrap();
-		write!(speedup_file,    "{} {}\n", randomization_factor * 100.0, fastest_competitor_ms / drop_merge_duration_ms).unwrap();
+		write!(std_file,        "{} {}\n", disorder_factor * 100.0, std_duration_ms).unwrap();
+		write!(quicker_file,    "{} {}\n", disorder_factor * 100.0, quicker_duration_ms).unwrap();
+		write!(drop_merge_file, "{} {}\n", disorder_factor * 100.0, drop_merge_duration_ms).unwrap();
+		write!(speedup_file,    "{} {}\n", disorder_factor * 100.0, fastest_competitor_ms / drop_merge_duration_ms).unwrap();
 
 		pb.inc();
 	}

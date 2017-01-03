@@ -12,15 +12,15 @@ set tics nomirror
 set style line 12 lc rgb '#808080' lt 0 lw 1
 set grid back ls 12
 
-set style line 1 lc rgb '#AA0000' pt 0 ps 1 lt 1 lw 2
-set style line 2 lc rgb '#00AA00' pt 0 ps 1 lt 1 lw 2
-set style line 3 lc rgb '#0000AA' pt 0 ps 1 lt 1 lw 2
+set style line 1 lc rgb '#FF0000' pt 0 ps 1 lt 1 lw 2
+set style line 2 lc rgb '#00BB00' pt 0 ps 1 lt 1 lw 2
+set style line 3 lc rgb '#4444FF' pt 0 ps 1 lt 1 lw 2
 set style line 4 lc rgb '#800080' pt 0 ps 1 lt 1 lw 2
 set style line 5 lc rgb '#606060' pt 0 ps 1 lt 1 lw 2
 
 set key bottom
 
-set xlabel "Randomization"
+set xlabel "Disorder"
 set xtics format "%.0f%%"
 
 # Generate the comparison graphs:
@@ -38,7 +38,7 @@ set title "Sorting 100 000 semi-ordered 100-character strings"
 set ylabel "ms"
 plot 'data/string/std_sort.data'       u 1:2 t 'Vec::sort'        w lp ls 1, \
      'data/string/quicker_sort.data'   u 1:2 t 'Quicksort'        w lp ls 2, \
-     'data/string/drop_merge_sort.data' u 1:2 t 'Drop-Merge sort' w lp ls 4
+     'data/string/drop_merge_sort.data' u 1:2 t 'Drop-Merge sort' w lp ls 3
 
 # Generate the speedup graph:
 set xrange [0:50]
