@@ -3,11 +3,13 @@ name = "dmsort"
 version = "0.1.0"
 authors = ["Emil Ernerfeldt <emilernerfeldt@gmail.com>"]
 description = "Fast adaptive sorting for when most of your data is already in order."
-keywords = ["sorting", "sort", "adaptive"]
-license = "Public Domain"
-repository = "https://github.com/emilk/drop-merge-sort"
 documentation = "https://emilk.github.io/drop-merge-sort/dmsort/index.html"
+homepage = "https://github.com/emilk/drop-merge-sort"
+repository = "https://github.com/emilk/drop-merge-sort"
 readme = "README.md"
+keywords = ["sorting", "sort", "adaptive"]
+license = "MIT"
+include = [ "**/*.rs", "Cargo.toml", ]
 
 [lib]
 name = "dmsort"
