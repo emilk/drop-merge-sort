@@ -25,15 +25,14 @@ type Integer = i32;
 
 /// Returns a mostly-sorted array with disorder_factor fraction of elements with random values.
 fn generate_integers(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<Integer> {
-	let mut result = Vec::with_capacity(length);
-	for i in 0..length {
+
+	(0..length).map(|i| {
 		if rng.next_f32() < disorder_factor {
-			result.push(rng.gen_range(0 as Integer, length as Integer));
+			rng.gen_range(0 as Integer, length as Integer)
 		} else {
-			result.push(i as Integer);
+			i as Integer
 		}
-	}
-	result
+	}).collect()
 }
 
 fn generate_strings(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<String> {

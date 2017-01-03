@@ -47,6 +47,7 @@ fn max_in_slice<'a, T, F>(slice: &'a [T], mut compare: F) -> &'a T
 // ----------------------------------------------------------------------------
 
 /// This is the readable reference implementation that only works for Copy types.
+/// Returns the number of dropped elements for diagnostic purposes.
 fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	where T: Copy,
 		  F: FnMut(&T, &T) -> Ordering
@@ -76,7 +77,13 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 			return dropped.len() * EARLY_OUT_TEST_AT; // Just an estimate.
 		}
 
-		if 1 <= write && compare(&slice[read], &slice[write - 1]) == Ordering::Less {
+		if write == 0 || compare(&slice[read], &slice[write - 1]) != Ordering::Less {
+			// The element is order - keep it:
+			slice[write] = slice[read];
+			read += 1;
+			write += 1;
+			num_dropped_in_row = 0;
+		} else {
 			// The next element is smaller than the last stored one.
 			// The question is - should we drop the new element, or was accepting the previous element a mistake?
 
@@ -101,6 +108,7 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 			}
 
 			if num_dropped_in_row < RECENCY {
+				// Drop it:
 				dropped.push(slice[read]);
 				read += 1;
 				num_dropped_in_row += 1;
@@ -122,7 +130,7 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 					as many times as the leading non-decreasing subsequence is long.
 				*/
 
-				// Undo the dropping of elements:
+				// Undo dropping the last num_dropped_in_row elements:
 				let trunc_to_length = dropped.len() - num_dropped_in_row;
 				dropped.truncate(trunc_to_length);
 				read -= num_dropped_in_row;
@@ -130,7 +138,7 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 				let mut num_backtracked = 1;
 				write -= 1;
 
-				if FAST_BACKTRACKING { // && 1 <= write && compare(&slice[read], &slice[write - 1]) == Ordering::Less {
+				if FAST_BACKTRACKING {
 					// Back-track until we can accept at least one of the recently dropped elements:
 					let max_of_dropped = max_in_slice(&slice[read..(read + num_dropped_in_row + 1)], |a, b| compare(a, b));
 
@@ -145,25 +153,18 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 
 				num_dropped_in_row = 0;
 			}
-		} else {
-			// Keep:
-			slice[write] = slice[read];
-			read += 1;
-			write += 1;
-			num_dropped_in_row = 0;
 		}
 	}
 
 	let num_dropped = dropped.len();
 
 	// ------------------------------------------------------------------------
+	// Second step: sort the dropped elements:
 
 	dropped.sort_by(|a, b| compare(a, b));
 
 	// ------------------------------------------------------------------------
-	// slice[..write] is now sorted, as is "dropped".
-	// We now want to merge these into "slice".
-	// Let us do that from the back, putting the largest elements in place first:
+	// Third step: merge slice[..write] and `dropped`:
 
 	let mut back = slice.len();
 
@@ -266,9 +267,13 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 			return;
 		}
 
-		if 1 <= s.write
-			&& compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 1)) == Ordering::Less
-		{
+		if s.write == 0 || compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 1)) != Ordering::Less {
+			// The element is order - keep it:
+			unsafe_copy(&mut s.slice, read, s.write);
+			read += 1;
+			s.write += 1;
+			num_dropped_in_row = 0;
+		} else {
 			if DOUBLE_COMPARISONS
 				&& num_dropped_in_row == 0
 				&& 2 <= s.write
@@ -282,11 +287,12 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 			}
 
 			if num_dropped_in_row < RECENCY {
+				// Drop it:
 				unsafe_push(&mut s.dropped, s.slice.get_unchecked(read));
 				read += 1;
 				num_dropped_in_row += 1;
 			} else {
-				// Undo the dropping of elements:
+				// Undo dropping the last num_dropped_in_row elements:
 				let trunc_to_length = s.dropped.len() - num_dropped_in_row;
 				s.dropped.set_len(trunc_to_length);
 				read -= num_dropped_in_row;
@@ -304,7 +310,7 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 					}
 				}
 
-				// Append s.slice[read..(read + num_backtracked)] to s.dropped
+				// Append s.slice[read..(read + num_backtracked)] to s.dropped:
 				{
 					let old_len = s.dropped.len();
 					for _ in 0..num_backtracked {
@@ -315,11 +321,6 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 
 				num_dropped_in_row = 0;
 			}
-		} else {
-			unsafe_copy(&mut s.slice, read, s.write);
-			read += 1;
-			s.write += 1;
-			num_dropped_in_row = 0;
 		}
 	}
 
@@ -328,9 +329,7 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 	s.dropped.sort_by(|a, b| compare(a, b));
 
 	// ------------------------------------------------------------------------
-	// s.slice[..s.write] is now sorted, as is "s.dropped".
-	// We now want to merge these into "s.slice".
-	// Let us do that from the back, putting the largest elements in place first:
+	// Merge:
 
 	let mut back = s.slice.len();
 

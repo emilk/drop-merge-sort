@@ -1,8 +1,7 @@
 // This file is only to show you how to use dmsort.
 extern crate dmsort;
 
-#[test]
-fn example() {
+fn main() {
 	let mut numbers : Vec<i32> = vec!(0, 1, 6, 7, 2, 3, 4, 5);
 
 	// Sort with custom key:
