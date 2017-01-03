@@ -52,7 +52,7 @@ function generate_test_data(length, disorder_factor) -> Vec {
 }
 ```
 
-Comparing this to the default Rust sorting algorithm ([Vec::sort](https://doc.rust-lang.org/beta/std/vec/struct.Vec.html#method.sort), a [stable sorting algorithm](https://github.com/rust-lang/rust/pull/38192) based loosely on [Timsort](https://en.wikipedia.org/wiki/Timsort) and [dual-pivot quicksort](https://github.com/notriddle/quickersort) for different disorder factors. The compiler was `rustc 1.15.0-nightly (71c06a56a 2016-12-18)`.
+Comparing this to the default Rust sorting algorithm ([Vec::sort](https://doc.rust-lang.org/beta/std/vec/struct.Vec.html#method.sort), a [stable sorting algorithm](https://github.com/rust-lang/rust/pull/38192) based loosely on [Timsort](https://en.wikipedia.org/wiki/Timsort)) and [dual-pivot quicksort](https://github.com/notriddle/quickersort) for different disorder factors. The compiler was `rustc 1.15.0-nightly (71c06a56a 2016-12-18)`.
 
 ![Comparing Drop-Merge sort](images/comparisons_i32.png)
 ![Comparing Drop-Merge sort](images/comparisons_string.png)
