@@ -29,6 +29,9 @@ const DOUBLE_COMPARISONS : bool = true;
 /// If RECENCY is too small we are more dependent on nice data/luck.
 const RECENCY : usize = 8;
 
+/// Back-track several elements at once. This is helpful when there are big clumps out-of-order.
+const FAST_BACKTRACKING : bool = true;
+
 /// Break early if we notice that the input is not ordered enough.
 const EARLY_OUT : bool = true;
 
@@ -36,7 +39,7 @@ const EARLY_OUT : bool = true;
 const EARLY_OUT_TEST_AT : usize = 4;
 
 /// If more than this percentage of elements have been dropped, we abort.
-const EARLY_OUT_DISORDER_FRACTION : f32 = 0.70;
+const EARLY_OUT_DISORDER_FRACTION : f32 = 0.80;
 
 /// Show fastest of BENCH_BEST_OF:
 const BENCH_BEST_OF : usize = 5;
@@ -123,14 +126,27 @@ fn dmsort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 					as many times as the leading non-decreasing subsequence is long.
 				*/
 
-				// Back up and recheck the elements we previously dropped:
+				// Undo the dropping of elements:
 				let trunc_to_length = dropped.len() - num_dropped_in_row;
 				dropped.truncate(trunc_to_length);
 				read -= num_dropped_in_row;
 
-				// Drop the element we mistakingly accepted:
-				dropped.push(slice[write - 1]);
-				write -= 1; // Over-write the dropped element.
+				let mut num_backtracked = 1;
+				write -= 1;
+
+				if FAST_BACKTRACKING { // && 1 <= write && compare(&slice[read], &slice[write - 1]) == Ordering::Less {
+					// Back-track until we can accept at least one of the recently dropped elements:
+					let max_of_dropped = slice[read..(read + num_dropped_in_row + 1)].iter()
+						.max_by(|a, b| return compare(a, b)).unwrap();
+
+					while 1 <= write && compare(&max_of_dropped, &slice[write - 1]) == Ordering::Less {
+						num_backtracked += 1;
+						write -= 1;
+					}
+				}
+
+				// Drop the back-tracked elements:
+				dropped.extend_from_slice(&slice[write..(write + num_backtracked)]);
 
 				num_dropped_in_row = 0;
 			}
@@ -272,14 +288,33 @@ fn dmsort_move_by<T, F>(slice: &mut [T], mut compare: F)
 				read += 1;
 				num_dropped_in_row += 1;
 			} else {
-				// Back up and recheck the elements we previously dropped:
+				// Undo the dropping of elements:
 				let trunc_to_length = s.dropped.len() - num_dropped_in_row;
 				s.dropped.set_len(trunc_to_length);
 				read -= num_dropped_in_row;
 
-				// Drop the element we mistakingly accepted:
-				unsafe_push(&mut s.dropped, s.slice.get_unchecked(s.write - 1));
-				s.write -= 1; // Overwrite the dropped element.
+				let mut num_backtracked = 1;
+				s.write -= 1;
+
+				if FAST_BACKTRACKING {
+					// Back-track until we can accept at least one of the recently dropped elements:
+					let max_of_dropped = s.slice[read..(read + num_dropped_in_row + 1)].iter()
+						.max_by(|a, b| return compare(a, b)).unwrap();
+
+					while 1 <= s.write && compare(&max_of_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
+						num_backtracked += 1;
+						s.write -= 1;
+					}
+				}
+
+				// Append s.slice[read..(read + num_backtracked)] to s.dropped
+				{
+					let old_len = s.dropped.len();
+					for _ in 0..num_backtracked {
+						s.dropped.push(std::mem::uninitialized::<T>());
+					}
+					ptr::copy_nonoverlapping(s.slice.get_unchecked(s.write), s.dropped.get_unchecked_mut(old_len), num_backtracked);
+				}
 
 				num_dropped_in_row = 0;
 			}
@@ -516,6 +551,7 @@ fn bench_evil() {
 	let (std_duration_ms,     std_sorted)     = time_sort_ms(&evil_input, |x| x.sort());
 	let (quicker_duration_ms, quicker_sorted) = time_sort_ms(&evil_input, |x| quickersort::sort(x));
 	let (drop_duration_ms,    drop_sorted)    = time_sort_ms(&evil_input, |x| dmsort(x));
+	// let (drop_duration_ms,    drop_sorted)    = time_sort_ms(&evil_input, |x| {dmsort_copy(x); ()});
 
 	assert_eq!(std_sorted, drop_sorted);
 	assert_eq!(std_sorted, quicker_sorted);

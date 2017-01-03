@@ -33,7 +33,7 @@ The naïve Dropsort algorithm will accept `0 1 12` and then drop the remaining v
 
 Drop-Merge sort will keep in-order elements in situ, moving them towards the start of the list. This helps keep the memory use down and the performance up.
 
-If the elements are not ordered Drop-Merge sort can be around 30% slower than a traditional sorting algorithm. Therefor Drop-Merge sort will try to detect such disordered input and abort, falling back to the standard sorting algorithm.
+If the elements are not ordered Drop-Merge sort can be around 30% slower than a traditional sorting algorithm. Therefore Drop-Merge sort will try to detect such disordered input and abort, falling back to the standard sorting algorithm.
 
 # Performance
 To test the performance of this algorithm, I generate almost-sorted data like this (pseudo-code):
@@ -57,7 +57,7 @@ Comparing this to the default Rust sorting algorithm ([Vec::sort](https://doc.ru
 ![Comparing Drop-Merge sort](images/comparisons_i32.png)
 ![Comparing Drop-Merge sort](images/comparisons_string.png)
 
-We can see that all three algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the disorder factor is less than 30% (more than 70% of the elements are in order).
+We can see that all three algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the disorder factor is less than 35% (more than 65% of the elements are in order).
 
 It also behaves well when the data becomes more random, and at its worst it is still only ~30% slower than quicksort.
 
@@ -65,9 +65,9 @@ Here is another view of the data for 0-50% disorder:
 
 ![Speedup over quicksort](images/speedup_i32_dmsort_move.png)
 
-Here we can see that we get 5x speedup over quicksort when 99% of the elements are in order, and a 2x speedup when 80% of the elements are in order.
+Here we can see that we get 5x speedup over quicksort when 99% of the elements are in order, and a 2x speedup when 85% of the elements are in order.
 
-When the disorder is above 30% (less than 70% of the elements are in order), the speedup is less than 1, i.e. Drop-Merge sort is slower than its competitors.
+When the disorder is above 35% (less than 65% of the elements are in order), Drop-Merge sort is slower than its competitors.
 
 # Comparison to other adaptive sorting algorithms
 An adaptive sorting algorithm is one that can exploit existing order. These algorithms ranges from the complicated to the simple.
@@ -76,18 +76,14 @@ On the complicated end there is the famous [Smoothsort](https://en.wikipedia.org
 
 On the simple end of the spectrum there are `O(N²)` algorithms that perform extremely well when there are only one or two elements out of place, or the list is very short (a few hundred elements at most). Examples include [Insertion sort](https://en.wikipedia.org/wiki/Insertion_sort) and [Coctail sort](https://en.wikipedia.org/wiki/Cocktail_shaker_sort).
 
-Drop-Merge sort finds an interesting middle-ground – it is reasonably simple (around 50 lines of code), yet manages to perform well for long lists. Note, however, that Drop-Merge sort depends on another sorting algorithm (e.g. quick-sort) for sorting the out-of-order elements.
+Drop-Merge sort finds an interesting middle-ground – it is reasonably simple (less than 100 lines of code), yet manages to perform well for long lists. Note, however, that Drop-Merge sort depends on another sorting algorithm (e.g. quick-sort) for sorting the out-of-order elements.
 
 # Limitations and future work
 Drop-Merge sort is not stable, which means it will not keep the order of equal elements.
 
 Drop-Merge sort does not sort [in-situ](https://en.wikipedia.org/wiki/In-place_algorithm), but will use `O(K)` extra memory, where `K` is the number of elements out-of-order.
 
-There is a worst-case scenario where all elements are in order, except for the last few who are smaller than all the preceding ones. In this case the algorithm will back-track and drop all the initial elements and keep only the last. The behavior of this is still `O(N⋅log(N))` comparisons, but it will use `O(N)` extra memory and be around 6x slower than the standard Rust sort. We could potentially improve this by detecting large back-tracking and handle it by either simply stopping the back-tracking, or maybe by dividing the input at the problem boundary and recursing, before finally merging the sorted sub-ranges.
-
 The algorithms uses `recency=8` which means it can handle no more than 8 outliers in a row. This number was chosen by experimentation, and could perhaps be adjusted dynamically for increased performance.
-
-Another improvement would be to detect cases where the input is does not conform to the working hypothesis of being partially-sorted.
 
 # Other implementations
 * C++: [https://github.com/adrian17/cpp-drop-merge-sort](https://github.com/adrian17/cpp-drop-merge-sort)
