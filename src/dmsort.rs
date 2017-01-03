@@ -185,6 +185,7 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	num_dropped
 }
 
+/// UNSTABLE! FOR INTERNAL USE ONLY.
 pub fn sort_copy<T: Copy + Ord>(slice: &mut [T]) -> usize
 {
 	sort_copy_by(slice, |a, b| a.cmp(b))
@@ -357,16 +358,25 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 // ----------------------------------------------------------------------------
 
 /// Sorts the elements using the given compare function.
-/// Expected number of comparisons is O(N + K * log(K)) where K is the number of elements not in order.
-/// Expected memory usage is O(K).
-/// Works best for when K < 0.2 * N.
-/// The out-of-order elements are expected to be randomly distributed (NOT clumped).
+/// # Examples
+/// ```
+/// let mut numbers : Vec<i32> = vec!(0, 1, 6, 7, 2, 3, 4, 5);
+/// dmsort::sort_by(&mut numbers, |a, b| b.cmp(a));
+/// assert_eq!(numbers, vec!(7, 6, 5, 4, 3, 2, 1, 0));
+/// ```
 pub fn sort_by<T, F>(slice: &mut [T], compare: F)
 	where F: FnMut(&T, &T) -> Ordering
 {
 	sort_move_by(slice, compare);
 }
 
+/// Sorts the elements using the given key function.
+/// # Examples
+/// ```
+/// let mut numbers : Vec<i32> = vec!(0, 1, 6, 7, 2, 3, 4, 5);
+/// dmsort::sort_by_key(&mut numbers, |x| -x);
+/// assert_eq!(numbers, vec!(7, 6, 5, 4, 3, 2, 1, 0));
+/// ```
 pub fn sort_by_key<T, K, F>(slice: &mut [T], mut key: F)
 	where K: Ord,
 	      F: FnMut(&T) -> K
@@ -374,11 +384,13 @@ pub fn sort_by_key<T, K, F>(slice: &mut [T], mut key: F)
 	sort_by(slice, |a, b| key(a).cmp(&key(b)));
 }
 
-/// Sorts the elements using the given compare function.
-/// Expected number of comparisons is O(N + K * log(K)) where K is the number of elements not in order.
-/// Expected memory usage is O(K).
-/// Works best for when K < 0.2 * N.
-/// The out-of-order elements are expected to be randomly distributed (NOT clumped).
+/// Sorts the elements using the Ord trait.
+/// # Examples
+/// ```
+/// let mut numbers : Vec<i32> = vec!(0, 1, 6, 7, 2, 3, 4, 5);
+/// dmsort::sort(&mut numbers);
+/// assert_eq!(numbers, vec!(0, 1, 2, 3, 4, 5, 6, 7));
+/// ```
 pub fn sort<T: Ord>(slice: &mut [T])
 {
 	sort_move_by(slice, |a, b| a.cmp(b));
