@@ -1,5 +1,5 @@
 [root]
-name = "drop_merge_sort"
+name = "dmsort"
 version = "0.1.0"
 dependencies = [
  "pbr 1.0.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)",

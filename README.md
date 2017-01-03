@@ -87,3 +87,8 @@ The algorithms uses `recency=8` which means it can handle no more than 8 outlier
 
 # Other implementations
 * C++: [https://github.com/adrian17/cpp-drop-merge-sort](https://github.com/adrian17/cpp-drop-merge-sort)
+
+# TODO
+* Make it run on stable rust
+* Generate documentation
+* Publish on Cargo

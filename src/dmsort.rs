@@ -4,23 +4,9 @@
 //   license: you are granted a perpetual, irrevocable license to copy, modify,
 //   publish, and distribute this file as you see fit.
 
-use std::cell::RefCell;
 use std::cmp::Ordering;
-use std::fs::File;
-use std::io::Write;
-use std::panic;
-use std::path::Path;
+use std::mem;
 use std::ptr;
-use std::collections::BTreeSet;
-
-extern crate rand;
-use rand::{Rng, SeedableRng, StdRng};
-
-extern crate pbr;
-use pbr::ProgressBar;
-
-extern crate quickersort;
-extern crate time;
 
 // ----------------------------------------------------------------------------
 
@@ -44,17 +30,10 @@ const EARLY_OUT_TEST_AT : usize = 4;
 /// If more than this percentage of elements have been dropped, we abort.
 const EARLY_OUT_DISORDER_FRACTION : f32 = 0.80;
 
-/// Show fastest of BENCH_BEST_OF:
-const BENCH_BEST_OF : usize = 5;
-
-static BENCH_RESOLUTION_START  : usize = 20;
-static BENCH_RESOLUTION_END    : usize =  99 * 5;
-static BENCH_RESOLUTION_CUTOFF : f32   =   0.01;
-
 // ----------------------------------------------------------------------------
 
 /// This is the readable reference implementation that only works for Copy types.
-fn dmsort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
+fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	where T: Copy,
 		  F: FnMut(&T, &T) -> Ordering
 {
@@ -189,9 +168,9 @@ fn dmsort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	num_dropped
 }
 
-fn dmsort_copy<T: Copy + Ord>(slice: &mut [T]) -> usize
+pub fn sort_copy<T: Copy + Ord>(slice: &mut [T]) -> usize
 {
-	dmsort_copy_by(slice, |a, b| a.cmp(b))
+	sort_copy_by(slice, |a, b| a.cmp(b))
 }
 
 // ----------------------------------------------------------------------------
@@ -233,17 +212,19 @@ impl<'a, T> Drop for DmSorter<'a, T> {
 	}
 }
 
+#[inline(always)]
 unsafe fn unsafe_push<T>(vec : &mut Vec<T>, value: &T) {
 	let old_len = vec.len();
-	vec.push(std::mem::uninitialized::<T>());
+	vec.push(mem::uninitialized::<T>());
 	ptr::copy_nonoverlapping(value, vec.get_unchecked_mut(old_len), 1);
 }
 
+#[inline(always)]
 unsafe fn unsafe_copy<T>(slice: &mut [T], source: usize, dest: usize) {
 	ptr::copy_nonoverlapping(slice.get_unchecked(source), slice.get_unchecked_mut(dest), 1);
 }
 
-fn dmsort_move_by<T, F>(slice: &mut [T], mut compare: F)
+fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 	where F: FnMut(&T, &T) -> Ordering
 { unsafe {
 	if slice.len() < 2 { return; }
@@ -314,7 +295,7 @@ fn dmsort_move_by<T, F>(slice: &mut [T], mut compare: F)
 				{
 					let old_len = s.dropped.len();
 					for _ in 0..num_backtracked {
-						s.dropped.push(std::mem::uninitialized::<T>());
+						s.dropped.push(mem::uninitialized::<T>());
 					}
 					ptr::copy_nonoverlapping(s.slice.get_unchecked(s.write), s.dropped.get_unchecked_mut(old_len), num_backtracked);
 				}
@@ -357,11 +338,6 @@ fn dmsort_move_by<T, F>(slice: &mut [T], mut compare: F)
 	}
 } }
 
-fn dmsort_move<T: Ord>(slice: &mut [T])
-{
-	dmsort_move_by(slice, |a, b| a.cmp(b))
-}
-
 // ----------------------------------------------------------------------------
 
 /// Sorts the elements using the given compare function.
@@ -369,17 +345,17 @@ fn dmsort_move<T: Ord>(slice: &mut [T])
 /// Expected memory usage is O(K).
 /// Works best for when K < 0.2 * N.
 /// The out-of-order elements are expected to be randomly distributed (NOT clumped).
-fn dmsort_by<T, F>(slice: &mut [T], compare: F)
+pub fn sort_by<T, F>(slice: &mut [T], compare: F)
 	where F: FnMut(&T, &T) -> Ordering
 {
-	dmsort_move_by(slice, compare);
+	sort_move_by(slice, compare);
 }
 
-pub fn dmsort_by_key<T, K, F>(slice: &mut [T], key: F)
+pub fn sort_by_key<T, K, F>(slice: &mut [T], key: F)
 	where K: Ord,
 	      F: Fn(&T) -> K
 {
-	dmsort_by(slice, |a, b| key(a).cmp(&key(b)));
+	sort_by(slice, |a, b| key(a).cmp(&key(b)));
 }
 
 /// Sorts the elements using the given compare function.
@@ -387,253 +363,9 @@ pub fn dmsort_by_key<T, K, F>(slice: &mut [T], key: F)
 /// Expected memory usage is O(K).
 /// Works best for when K < 0.2 * N.
 /// The out-of-order elements are expected to be randomly distributed (NOT clumped).
-fn dmsort<T: Ord>(slice: &mut [T])
+pub fn sort<T: Ord>(slice: &mut [T])
 {
-	dmsort_move_by(slice, |a, b| a.cmp(b));
+	sort_move_by(slice, |a, b| a.cmp(b));
 }
 
 // ----------------------------------------------------------------------------
-
-type Integer = i32;
-
-/// Returns a mostly-sorted array with disorder_factor fraction of elements with random values.
-fn generate_integers(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<Integer> {
-	let mut result = Vec::with_capacity(length);
-	for i in 0..length {
-		if rng.next_f32() < disorder_factor {
-			result.push(rng.gen_range(0 as Integer, length as Integer));
-		} else {
-			result.push(i as Integer);
-		}
-	}
-	result
-}
-
-fn generate_strings(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<String> {
-	generate_integers(rng, length, disorder_factor).iter().map(|&x| format!("{:0100}", x)).collect()
-}
-
-fn time_sort_ms<T: Clone, Sorter>(unsorted: &Vec<T>, mut sorter: Sorter) -> (f32, Vec<T>)
-	where Sorter: FnMut(&mut Vec<T>)
-{
-	let mut best_ns = None;
-	let mut sorted = Vec::new();
-
-	for _ in 0..BENCH_BEST_OF {
-		let mut vec_clone : Vec<T> = unsorted.clone();
-		let start_time_ns = time::precise_time_ns();
-		sorter(&mut vec_clone);
-		let duration_ns = time::precise_time_ns() - start_time_ns;
-		if best_ns == None || duration_ns < best_ns.unwrap() {
-			best_ns = Some(duration_ns);
-		}
-		sorted = vec_clone;
-	}
-
-	(best_ns.unwrap() as f32 / 1000000.0, sorted)
-}
-
-/// Benchmark at these disorders:
-fn get_bench_disorders() -> Vec<f32> {
-	fn remap(x: usize, in_min: usize, in_max: usize, out_min: f32, out_max: f32) -> f32 {
-		out_min + (out_max - out_min) * ((x - in_min) as f32) / ((in_max - in_min) as f32)
-	}
-
-	return
-		(0..BENCH_RESOLUTION_START).map(    |x| remap(x, 0, BENCH_RESOLUTION_START, 0.0, BENCH_RESOLUTION_CUTOFF)).chain(
-		(0..(BENCH_RESOLUTION_END + 1)).map(|x| remap(x, 0, BENCH_RESOLUTION_END,   BENCH_RESOLUTION_CUTOFF, 1.0))
-		).collect();
-}
-
-fn generate_comparison_data_i32(rng: &mut rand::StdRng, length: usize) {
-	let bench_disorders = get_bench_disorders();
-	let mut pb = ProgressBar::new(bench_disorders.len() as u64);
-	pb.message("Benchmarking integers: ");
-	let mut std_file             = File::create(&Path::new("data/i32/std_sort.data")).unwrap();
-	let mut quicker_file         = File::create(&Path::new("data/i32/quicker_sort.data")).unwrap();
-	let mut dmsort_copy_file     = File::create(&Path::new("data/i32/dmsort_copy_sort.data")).unwrap();
-	let mut dmsort_move_file     = File::create(&Path::new("data/i32/dmsort_move_sort.data")).unwrap();
-	let mut copy_speedup_file    = File::create(&Path::new("data/i32/dmsort_copy_speedup.data")).unwrap();
-	let mut move_speedup_file    = File::create(&Path::new("data/i32/dmsort_move_speedup.data")).unwrap();
-	let mut num_dropped_file     = File::create(&Path::new("data/i32/num_dropped.data")).unwrap();
-
-	for disorder_factor in bench_disorders {
-		let vec = generate_integers(rng, length, disorder_factor);
-		let (std_duration_ms,            std_sorted)            = time_sort_ms(&vec, |x| x.sort());
-		let (quicker_duration_ms,        quicker_sorted)        = time_sort_ms(&vec, |x| quickersort::sort(x));
-		let (dmsort_copy_duration_ms,    dmsort_copy_sorted)    = time_sort_ms(&vec, |x| {dmsort_copy(x);    ()});
-		let (dmsort_move_duration_ms,    dmsort_move_sorted)    = time_sort_ms(&vec, |x| dmsort_move(x));
-
-		let fastest_competitor_ms = std_duration_ms.min(quicker_duration_ms);
-
-		assert_eq!(dmsort_copy_sorted,    std_sorted);
-		assert_eq!(dmsort_move_sorted,    std_sorted);
-		assert_eq!(quicker_sorted,        std_sorted);
-
-		write!(std_file,             "{} {}\n", disorder_factor * 100.0, std_duration_ms).unwrap();
-		write!(quicker_file,         "{} {}\n", disorder_factor * 100.0, quicker_duration_ms).unwrap();
-		write!(dmsort_copy_file,     "{} {}\n", disorder_factor * 100.0, dmsort_copy_duration_ms).unwrap();
-		write!(dmsort_move_file,     "{} {}\n", disorder_factor * 100.0, dmsort_move_duration_ms).unwrap();
-		write!(copy_speedup_file,    "{} {}\n", disorder_factor * 100.0, fastest_competitor_ms / dmsort_copy_duration_ms).unwrap();
-		write!(move_speedup_file,    "{} {}\n", disorder_factor * 100.0, fastest_competitor_ms / dmsort_move_duration_ms).unwrap();
-
-		{
-			let mut temp = vec.clone();
-			let num_dropped_in_row = dmsort_copy(&mut temp);
-			let num_dropped = (num_dropped_in_row as f64) / (temp.len() as f64);
-			write!(num_dropped_file, "{} {}\n", disorder_factor * 100.0, num_dropped * 100.0).unwrap();
-		}
-
-		pb.inc();
-	}
-}
-
-fn generate_comparison_data_string(rng: &mut rand::StdRng, length: usize) {
-	let bench_disorders = get_bench_disorders();
-	let mut pb = ProgressBar::new(bench_disorders.len() as u64);
-	pb.message("Benchmarking strings: ");
-	let mut std_file        = File::create(&Path::new("data/string/std_sort.data")).unwrap();
-	let mut quicker_file    = File::create(&Path::new("data/string/quicker_sort.data")).unwrap();
-	let mut drop_merge_file = File::create(&Path::new("data/string/drop_merge_sort.data")).unwrap();
-	let mut speedup_file    = File::create(&Path::new("data/string/speedup_over_quickersort.data")).unwrap();
-
-	for disorder_factor in bench_disorders {
-		let vec = generate_strings(rng, length, disorder_factor);
-		let (std_duration_ms,        std_sorted)        = time_sort_ms(&vec, |x| x.sort());
-		let (quicker_duration_ms,    quicker_sorted)    = time_sort_ms(&vec, |x| quickersort::sort(x));
-		let (drop_merge_duration_ms, drop_merge_sorted) = time_sort_ms(&vec, |x| dmsort(x));
-
-		let fastest_competitor_ms = std_duration_ms.min(quicker_duration_ms);
-
-		assert_eq!(std_sorted, drop_merge_sorted);
-		assert_eq!(quicker_sorted, drop_merge_sorted);
-
-		write!(std_file,        "{} {}\n", disorder_factor * 100.0, std_duration_ms).unwrap();
-		write!(quicker_file,    "{} {}\n", disorder_factor * 100.0, quicker_duration_ms).unwrap();
-		write!(drop_merge_file, "{} {}\n", disorder_factor * 100.0, drop_merge_duration_ms).unwrap();
-		write!(speedup_file,    "{} {}\n", disorder_factor * 100.0, fastest_competitor_ms / drop_merge_duration_ms).unwrap();
-
-		pb.inc();
-	}
-}
-
-#[test]
-fn simple_tests() {
-	fn test_type<T: Clone + PartialEq + Ord + std::fmt::Debug>(unsorted: Vec<T>) {
-		let mut dm_sorted = unsorted.clone();
-		dmsort(&mut dm_sorted);
-
-		let mut std_sorted = unsorted.clone();
-		std_sorted.sort();
-
-		assert_eq!(dm_sorted, std_sorted, "FAIL with input {:?}", unsorted);
-	}
-
-	fn test(list: Vec<Integer>) {
-		test_type(list.iter().map(|&x| format!("{:02}", x)).collect());
-		test_type(list);
-	}
-
-	test(vec!());
-	test(vec!(0));
-	test(vec!(0, 1));
-	test(vec!(1, 0));
-	test(vec!(0, 1, 2));
-	test(vec!(0, 2, 1));
-	test(vec!(1, 0, 2));
-	test(vec!(1, 2, 0));
-	test(vec!(2, 0, 1));
-	test(vec!(2, 1, 0));
-	test(vec!(0, 1, 3, 2, 4, -5, 6, 7, 8, 9));
-	test(vec!(0, 1, 10, 3, 4, 5, 6, 7, 8, 9));
-	test(vec!(10, 1, 2, 3, 4, 5, 6, 7, 8, 9));
-	test(vec!(0, 0, 2, 3, 4, 1, 6, 1, 8, 9));
-	test(vec!(20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
-	test(vec!(20, 21, 2, 23, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
-}
-
-#[test]
-fn test_unwind() {
-	/*
-	The purpose of this test is to make sure that if there is a panic in the compare function
-	then we will unwind the stack in such a way that the slice we are sorting
-	contains all elements it had when called (but maybe in a different, partially-sorted order).
-	This is crucial in order to prevent double-frees.
-	*/
-	struct TestSortType<'a> {
-		id:          usize,
-		dropped:     &'a RefCell<BTreeSet<usize>>,
-	}
-	impl<'a> Drop for TestSortType<'a> {
-		fn drop(&mut self) {
-			let did_insert = self.dropped.borrow_mut().insert(self.id);
-			assert!(did_insert, "Double-free of {}", self.id);
-		}
-	}
-
-	for break_after_this_many_comparisons in 0..14 {
-		let scheuled_panic_code : String = String::from("This is a scheduled panic");
-
-		let dropped = RefCell::new(BTreeSet::new());
-
-		let catch_result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-			let mut data = [
-				TestSortType{id: 0, dropped: &dropped},
-				TestSortType{id: 1, dropped: &dropped},
-				TestSortType{id: 5, dropped: &dropped},
-				TestSortType{id: 6, dropped: &dropped},
-				TestSortType{id: 2, dropped: &dropped},
-				TestSortType{id: 3, dropped: &dropped},
-				TestSortType{id: 4, dropped: &dropped},
-			];
-			let mut num_comparisons = 0;
-
-			dmsort_by(&mut data, |a, b| {
-				if num_comparisons == break_after_this_many_comparisons {
-					panic!(scheuled_panic_code.clone());
-				}
-				num_comparisons += 1;
-				a.id.cmp(&b.id)
-			});
-			panic!("We where supposed to abort after {} comparisons, but we only did {}",
-			       break_after_this_many_comparisons, num_comparisons);
-		}));
-
-		// Make sure we did panic:
-		assert!(catch_result.is_err());
-
-		// Make sure we panicked for the right reason:
-		let error = catch_result.err().unwrap();
-		assert!(error.is::<String>());
-		assert_eq!(*error.downcast_ref::<String>().unwrap(), scheuled_panic_code);
-
-		// Make sure we dropped all objects:
-		assert_eq!(dropped.borrow_mut().len(), 7);
-	}
-}
-
-/// Benchmark worst-case input for Drop-Merge sort
-fn bench_evil() {
-	let evil_input : Vec<_> = (100..1000000).chain(0..100).collect();
-	let (std_duration_ms,     std_sorted)     = time_sort_ms(&evil_input, |x| x.sort());
-	let (quicker_duration_ms, quicker_sorted) = time_sort_ms(&evil_input, |x| quickersort::sort(x));
-	let (drop_duration_ms,    drop_sorted)    = time_sort_ms(&evil_input, |x| dmsort(x));
-	// let (drop_duration_ms,    drop_sorted)    = time_sort_ms(&evil_input, |x| {dmsort_copy(x); ()});
-
-	assert_eq!(std_sorted, drop_sorted);
-	assert_eq!(std_sorted, quicker_sorted);
-	println!("Worst-case input:");
-	println!("std::sort:       {} ms", std_duration_ms);
-	println!("Quicksort:       {} ms", quicker_duration_ms);
-	println!("Drop-Merge sort: {} ms", drop_duration_ms);
-}
-
-fn main() {
-	bench_evil();
-
-	let seed: &[_] = &[0];
-	let mut rng: StdRng = SeedableRng::from_seed(seed);
-
-	generate_comparison_data_i32(&mut rng, 1000000);
-	generate_comparison_data_string(&mut rng, 100000);
-}

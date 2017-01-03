@@ -1,9 +1,20 @@
 [package]
-name = "drop_merge_sort"
+name = "dmsort"
 version = "0.1.0"
 authors = ["Emil Ernerfeldt <emilernerfeldt@gmail.com>"]
+description = "Fast adaptive sorting for when most of your data is already in order."
+keywords = ["sorting", "sort", "adaptive"]
+license = "Public Domain"
+repository = "https://github.com/emilk/drop-merge-sort"
+readme = "README.md"
 
-[dependencies]
+[lib]
+name = "dmsort"
+path = "src/lib.rs"
+test = false
+bench = false
+
+[dev-dependencies]
 pbr = "1.0.0-alpha.2"
 quickersort = "2.2.0"
 rand = "0.3.15"

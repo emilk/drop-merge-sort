@@ -1,6 +1,9 @@
 set -e
+# rustup default stable
 rustup default nightly
-export RUST_BACKTRACE=1
+# export RUST_BACKTRACE=1
 cargo test
-time cargo run --release
+
+# The slow benchmarks:
+time cargo test --release -- --nocapture --ignored
 gnuplot plot.gp
