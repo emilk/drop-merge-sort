@@ -32,6 +32,24 @@ const EARLY_OUT_DISORDER_FRACTION : f32 = 0.80;
 
 // ----------------------------------------------------------------------------
 
+/// Helper function.
+#[inline(always)]
+fn max_in_slice<'a, T, F>(slice: &'a [T], mut compare: F) -> &'a T
+	where F: FnMut(&T, &T) -> Ordering
+{
+	// slice.iter().max_by(|a, b| compare(a, b)).unwrap() // Not yet stable :(
+	debug_assert!(!slice.is_empty());
+	let mut max = &slice[0];
+	for i in 1..slice.len() {
+		if compare(max, &slice[i]) == Ordering::Less {
+			max = &slice[i];
+		}
+	}
+	max
+}
+
+// ----------------------------------------------------------------------------
+
 /// This is the readable reference implementation that only works for Copy types.
 fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	where T: Copy,
@@ -118,8 +136,7 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 
 				if FAST_BACKTRACKING { // && 1 <= write && compare(&slice[read], &slice[write - 1]) == Ordering::Less {
 					// Back-track until we can accept at least one of the recently dropped elements:
-					let max_of_dropped = slice[read..(read + num_dropped_in_row + 1)].iter()
-						.max_by(|a, b| compare(a, b)).unwrap();
+					let max_of_dropped = max_in_slice(&slice[read..(read + num_dropped_in_row + 1)], |a, b| compare(a, b));
 
 					while 1 <= write && compare(&max_of_dropped, &slice[write - 1]) == Ordering::Less {
 						num_backtracked += 1;
@@ -282,8 +299,7 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 
 				if FAST_BACKTRACKING {
 					// Back-track until we can accept at least one of the recently dropped elements:
-					let max_of_dropped = s.slice[read..(read + num_dropped_in_row + 1)].iter()
-						.max_by(|a, b| compare(a, b)).unwrap();
+					let max_of_dropped = max_in_slice(&s.slice[read..(read + num_dropped_in_row + 1)], |a, b| compare(a, b));
 
 					while 1 <= s.write && compare(&max_of_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
 						num_backtracked += 1;
@@ -351,9 +367,9 @@ pub fn sort_by<T, F>(slice: &mut [T], compare: F)
 	sort_move_by(slice, compare);
 }
 
-pub fn sort_by_key<T, K, F>(slice: &mut [T], key: F)
+pub fn sort_by_key<T, K, F>(slice: &mut [T], mut key: F)
 	where K: Ord,
-	      F: Fn(&T) -> K
+	      F: FnMut(&T) -> K
 {
 	sort_by(slice, |a, b| key(a).cmp(&key(b)));
 }
