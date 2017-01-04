@@ -1,4 +1,23 @@
-[Rust crate documentation](https://emilk.github.io/drop-merge-sort/dmsort/index.html)
+# Getting started with the crate
+
+Add this to `Cargo.toml`:
+```
+[dependencies]
+dmsort = "0.1.0"
+```
+
+And then use it:
+``` rust
+extern crate dmsort;
+
+fn main() {
+	let mut numbers : Vec<i32> = vec!(0, 1, 6, 7, 2, 3, 4, 5);
+	dmsort::sort(&mut numbers);
+	assert_eq!(numbers, vec!(0, 1, 2, 3, 4, 5, 6, 7));
+}
+```
+
+[Full dmsort documentation](https://emilk.github.io/drop-merge-sort/dmsort/index.html).
 
 # Abstract
 This is an implementation of a novel [adaptive sorting](https://en.wikipedia.org/wiki/Adaptive_sort) algorithm optimized for nearly-sorted data. Drop-Merge sort is especially useful for when >80% of the data is already in-order, and the unsorted elements are evenly distributed. An example use-case would be re-sorting an already sorted list after minor modifications.
@@ -89,6 +108,3 @@ The algorithms uses `recency=8` which means it can handle no more than 8 outlier
 
 # Other implementations
 * C++: [https://github.com/adrian17/cpp-drop-merge-sort](https://github.com/adrian17/cpp-drop-merge-sort)
-
-# TODO
-* Publish on Cargo

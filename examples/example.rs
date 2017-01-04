@@ -1,4 +1,3 @@
-// This file is only to show you how to use dmsort.
 extern crate dmsort;
 
 fn main() {
