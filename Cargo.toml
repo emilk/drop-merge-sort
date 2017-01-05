@@ -7,7 +7,6 @@ Fast adaptive sorting for when most of your data is already in order.
 dmsort can be 2-5 times faster than Rust's default sort when more than 80% of the elements are already in order.
 """
 documentation = "https://emilk.github.io/drop-merge-sort/dmsort/index.html"
-homepage = "https://github.com/emilk/drop-merge-sort"
 repository = "https://github.com/emilk/drop-merge-sort"
 readme = "README.md"
 keywords = ["sorting", "sort", "adaptive"]
@@ -21,6 +20,7 @@ test = false
 bench = false
 
 [dev-dependencies]
+gnuplot = "0.0.21"
 pbr = "1.0.0-alpha.2"
 quickersort = "2.2.0"
 rand = "0.3.15"

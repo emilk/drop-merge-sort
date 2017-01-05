@@ -9,8 +9,7 @@ cargo test
 # It can be found on https://emilk.github.io/drop-merge-sort/dmsort/index.html
 cargo doc && rm -rf docs/ && cp -r target/doc docs
 
-# The slow benchmarks:
+# The slow benchmarks that make the plots:
 time cargo test --release -- --nocapture --ignored
-gnuplot plot.gp
 
 rustc --version

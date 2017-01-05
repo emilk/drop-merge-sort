@@ -24,7 +24,7 @@ const EARLY_OUT : bool = true;
 const EARLY_OUT_TEST_AT : usize = 4;
 
 /// If more than this percentage of elements have been dropped, we abort.
-const EARLY_OUT_DISORDER_FRACTION : f32 = 0.80;
+const EARLY_OUT_DISORDER_FRACTION : f32 = 0.60;
 
 // ----------------------------------------------------------------------------
 

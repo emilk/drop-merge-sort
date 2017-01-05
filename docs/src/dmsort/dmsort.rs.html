@@ -9,6 +9,7 @@
 
     <title>dmsort.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -435,6 +436,7 @@
 <span id="391">391</span>
 <span id="392">392</span>
 <span id="393">393</span>
+<span id="394">394</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright (c) 2017 Emil Ernerfeldt</span>
 
@@ -462,7 +464,7 @@
 <span class='kw'>const</span> <span class='ident'>EARLY_OUT_TEST_AT</span> : <span class='ident'>usize</span> <span class='op'>=</span> <span class='number'>4</span>;
 
 <span class='doccomment'>/// If more than this percentage of elements have been dropped, we abort.</span>
-<span class='kw'>const</span> <span class='ident'>EARLY_OUT_DISORDER_FRACTION</span> : <span class='ident'>f32</span> <span class='op'>=</span> <span class='number'>0.80</span>;
+<span class='kw'>const</span> <span class='ident'>EARLY_OUT_DISORDER_FRACTION</span> : <span class='ident'>f32</span> <span class='op'>=</span> <span class='number'>0.60</span>;
 
 <span class='comment'>// ----------------------------------------------------------------------------</span>
 
@@ -485,6 +487,7 @@
 <span class='comment'>// ----------------------------------------------------------------------------</span>
 
 <span class='doccomment'>/// This is the readable reference implementation that only works for Copy types.</span>
+<span class='doccomment'>/// Returns the number of dropped elements for diagnostic purposes.</span>
 <span class='kw'>fn</span> <span class='ident'>sort_copy_by</span><span class='op'>&lt;</span><span class='ident'>T</span>, <span class='ident'>F</span><span class='op'>&gt;</span>(<span class='ident'>slice</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>T</span>], <span class='kw-2'>mut</span> <span class='ident'>compare</span>: <span class='ident'>F</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span>
 	<span class='kw'>where</span> <span class='ident'>T</span>: <span class='ident'>Copy</span>,
 		  <span class='ident'>F</span>: <span class='ident'>FnMut</span>(<span class='kw-2'>&amp;</span><span class='ident'>T</span>, <span class='kw-2'>&amp;</span><span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>Ordering</span>

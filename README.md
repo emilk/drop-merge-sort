@@ -44,8 +44,8 @@ function generate_test_data(length, disorder_factor) -> Vec {
 
 Comparing this to the default Rust sorting algorithm ([Vec::sort](https://doc.rust-lang.org/beta/std/vec/struct.Vec.html#method.sort), a [stable sorting algorithm](https://github.com/rust-lang/rust/pull/38192) based loosely on [Timsort](https://en.wikipedia.org/wiki/Timsort)) and [dual-pivot quicksort](https://github.com/notriddle/quickersort) for different disorder factors. The compiler was `rustc 1.15.0-nightly (71c06a56a 2016-12-18)`.
 
-![Comparing Drop-Merge sort](images/comparisons_i32.png)
-![Comparing Drop-Merge sort](images/comparisons_string.png)
+![Comparing Drop-Merge sort](images/comparisons_1M_i32.png)
+![Comparing Drop-Merge sort](images/comparisons_1M_string.png)
 
 We can see that all three algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the disorder factor is less than 35% (more than 65% of the elements are in order).
 
@@ -53,7 +53,7 @@ It also behaves well when the data becomes more random, and at its worst it is s
 
 Here is another view of the data for 0-50% disorder:
 
-![Speedup over quicksort](images/speedup_i32_dmsort_move.png)
+![Speedup over quicksort](images/speedup_1M_string.png)
 
 Here we can see that we get 5x speedup over quicksort when 99% of the elements are in order, and a 2x speedup when 85% of the elements are in order.
 
@@ -99,6 +99,13 @@ On the simple end of the spectrum there are `O(N²)` algorithms that perform ext
 
 Drop-Merge sort finds an interesting middle-ground – it is reasonably simple (less than 100 lines of code), yet manages to perform well for long lists. Note, however, that Drop-Merge sort depends on another sorting algorithm (e.g. quick-sort) for sorting the out-of-order elements.
 
+## When Drop-Merge sort works best
+* Less than 20-30% of the elements out of order AND these are randomly distributed in the data (not clumped).
+* You have a lot of data (10k elements or more, and definitively when you get into the millions).
+
+Furthermore, the biggest gain in Drop-Merge Sort comes from less comparisons. So the more expensive your comparison function is, the bigger gains you will see.
+
+
 ## Limitations and future work
 Drop-Merge sort is not stable, which means it will not keep the order of equal elements.
 
@@ -108,3 +115,7 @@ The algorithms uses `recency=8` which means it can handle no more than 8 outlier
 
 # Other implementations
 * C++: [https://github.com/adrian17/cpp-drop-merge-sort](https://github.com/adrian17/cpp-drop-merge-sort)
+
+
+## TODO
+* Set up TravisCI
