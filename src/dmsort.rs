@@ -7,24 +7,24 @@ use std::ptr;
 // ----------------------------------------------------------------------------
 
 /// This speeds up well-ordered input by quite a lot.
-const DOUBLE_COMPARISONS : bool = true;
+const DOUBLE_COMPARISONS: bool = true;
 
 /// Low RECENCY = faster when there is low disorder (a lot of order).
 /// High RECENCY = more resilient against long stretches of noise.
 /// If RECENCY is too small we are more dependent on nice data/luck.
-const RECENCY : usize = 8;
+const RECENCY: usize = 8;
 
 /// Back-track several elements at once. This is helpful when there are big clumps out-of-order.
-const FAST_BACKTRACKING : bool = true;
+const FAST_BACKTRACKING: bool = true;
 
 /// Break early if we notice that the input is not ordered enough.
-const EARLY_OUT : bool = true;
+const EARLY_OUT: bool = true;
 
 /// Test for early-out when we have processed len / EARLY_OUT_TEST_AT elements.
-const EARLY_OUT_TEST_AT : usize = 4;
+const EARLY_OUT_TEST_AT: usize = 4;
 
 /// If more than this percentage of elements have been dropped, we abort.
-const EARLY_OUT_DISORDER_FRACTION : f32 = 0.60;
+const EARLY_OUT_DISORDER_FRACTION: f32 = 0.60;
 
 // ----------------------------------------------------------------------------
 
@@ -50,9 +50,11 @@ fn max_in_slice<'a, T, F>(slice: &'a [T], mut compare: F) -> &'a T
 /// Returns the number of dropped elements for diagnostic purposes.
 fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	where T: Copy,
-		  F: FnMut(&T, &T) -> Ordering
+	      F: FnMut(&T, &T) -> Ordering
 {
-	if slice.len() < 2 { return slice.len(); }
+	if slice.len() < 2 {
+		return slice.len();
+	}
 
 	// ------------------------------------------------------------------------
 	// First step: heuristically find the Longest Nondecreasing Subsequence (LNS).
@@ -183,22 +185,20 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 }
 
 /// UNSTABLE! FOR INTERNAL USE ONLY.
-pub fn sort_copy<T: Copy + Ord>(slice: &mut [T]) -> usize
-{
+pub fn sort_copy<T: Copy + Ord>(slice: &mut [T]) -> usize {
 	sort_copy_by(slice, |a, b| a.cmp(b))
 }
 
 // ----------------------------------------------------------------------------
 
-/*
-A note about protecting us from stack unwinding:
-
-If our compare function panics we need to make sure all objects are put back into slice
-so they can be properly destroyed by the caller.
-
-This is done by temporarily bit-copying the data into the dropped vector
-and copying them back if there is a panic.
-*/
+// A note about protecting us from stack unwinding:
+//
+// If our compare function panics we need to make sure all objects are put back into slice
+// so they can be properly destroyed by the caller.
+//
+// This is done by temporarily bit-copying the data into the dropped vector
+// and copying them back if there is a panic.
+//
 struct DmSorter<'a, T: 'a> {
 	/// The slice we are sorting
 	slice: &'a mut [T],
@@ -228,7 +228,7 @@ impl<'a, T> Drop for DmSorter<'a, T> {
 }
 
 #[inline(always)]
-unsafe fn unsafe_push<T>(vec : &mut Vec<T>, value: &T) {
+unsafe fn unsafe_push<T>(vec: &mut Vec<T>, value: &T) {
 	let old_len = vec.len();
 	vec.push(mem::uninitialized::<T>());
 	ptr::copy_nonoverlapping(value, vec.get_unchecked_mut(old_len), 1);
@@ -386,8 +386,7 @@ pub fn sort_by_key<T, K, F>(slice: &mut [T], mut key: F)
 /// dmsort::sort(&mut numbers);
 /// assert_eq!(numbers, vec!(0, 1, 2, 3, 4, 5, 6, 7));
 /// ```
-pub fn sort<T: Ord>(slice: &mut [T])
-{
+pub fn sort<T: Ord>(slice: &mut [T]) {
 	sort_move_by(slice, |a, b| a.cmp(b));
 }
 

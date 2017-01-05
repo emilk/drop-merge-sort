@@ -9,9 +9,9 @@ extern crate time;
 use pbr::ProgressBar;
 use rand::{Rng, SeedableRng, StdRng};
 
-static BENCH_RESOLUTION_START  : usize = 10;
-static BENCH_RESOLUTION_END    : usize =  99 * 5;
-static BENCH_RESOLUTION_CUTOFF : f32   =   0.01;
+static BENCH_RESOLUTION_START: usize = 10;
+static BENCH_RESOLUTION_END: usize = 99 * 5;
+static BENCH_RESOLUTION_CUTOFF: f32 = 0.01;
 
 // ----------------------------------------------------------------------------
 
@@ -19,13 +19,15 @@ type Integer = i32;
 
 /// Returns a mostly-sorted array with disorder_factor fraction of elements with random values.
 fn generate_integers(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<Integer> {
-	(0..length).map(|i| {
-		if rng.next_f32() < disorder_factor {
-			rng.gen_range(0 as Integer, length as Integer)
-		} else {
-			i as Integer
-		}
-	}).collect()
+	(0..length)
+		.map(|i| {
+			if rng.next_f32() < disorder_factor {
+				rng.gen_range(0 as Integer, length as Integer)
+			} else {
+				i as Integer
+			}
+		})
+		.collect()
 }
 
 fn generate_strings(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<String> {
@@ -39,7 +41,7 @@ fn time_sort_ms<T: Clone, Sorter>(num_best_of: usize, unsorted: &Vec<T>, mut sor
 	let mut sorted = Vec::new();
 
 	for _ in 0..num_best_of {
-		let mut vec_clone : Vec<T> = unsorted.clone();
+		let mut vec_clone: Vec<T> = unsorted.clone();
 		let start_time_ns = time::precise_time_ns();
 		sorter(&mut vec_clone);
 		let duration_ns = time::precise_time_ns() - start_time_ns;
@@ -64,14 +66,13 @@ fn get_bench_disorders() -> Vec<f32> {
 		).collect();
 }
 
-fn benchmark_and_plot<T, G>(
-		rng:                &mut rand::StdRng,
-		num_best_of:        usize,
-		length:             usize,
-		length_str:         &str,
-		element_type_short: &str,
-		element_type_long:  &str,
-		mut generator:      G)
+fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
+                            num_best_of: usize,
+                            length: usize,
+                            length_str: &str,
+                            element_type_short: &str,
+                            element_type_long: &str,
+                            mut generator: G)
 	where T: std::fmt::Debug + Clone + std::cmp::Ord,
 	      G: FnMut(&mut rand::StdRng, usize, f32) -> Vec<T>
 {
@@ -79,10 +80,10 @@ fn benchmark_and_plot<T, G>(
 	let mut pb = ProgressBar::new(bench_disorders.len() as u64);
 	pb.message(&format!("Benchmarking {} {}: ", length_str, element_type_long));
 
-	let mut std_ms_list         = vec!();
-	let mut quicker_ms_list     = vec!();
-	let mut dmsort_ms_list      = vec!();
-	let mut dmsort_speedup_list = vec!();
+	let mut std_ms_list         = vec![];
+	let mut quicker_ms_list     = vec![];
+	let mut dmsort_ms_list      = vec![];
+	let mut dmsort_speedup_list = vec![];
 
 	for &disorder_factor in &bench_disorders {
 		let vec = generator(rng, length, disorder_factor);
@@ -104,7 +105,7 @@ fn benchmark_and_plot<T, G>(
 	}
 	println!();
 
-	let disorder_percentages : Vec<f32> = bench_disorders.iter().map(|x| x * 100.0).collect();
+	let disorder_percentages: Vec<f32> = bench_disorders.iter().map(|x| x * 100.0).collect();
 
 	use gnuplot::*;
 	{
