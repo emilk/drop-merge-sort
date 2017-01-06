@@ -5,6 +5,8 @@ Drop-Merge sort is 2-5 times faster than quicksort when sorting long lists (10k 
 
 With `N` elements in the list where `K` elements are out-of-order, Drop-Merge sort performs `O(N + K⋅log(K))` comparisons and use `O(K)` extra memory.
 
+Definition: X% of elements are in order if the [Longest Nondecreasing Subsequence](https://en.wikipedia.org/wiki/Longest_increasing_subsequence) contains X% of the elements.
+
 # Getting started with the crate
 Add this to `Cargo.toml`:
 ```
