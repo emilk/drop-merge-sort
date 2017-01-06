@@ -48,18 +48,23 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/dmsort/lib.rs.html#1-40' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/dmsort/lib.rs.html#1-43' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>Drop-Merge sort created and implemented by Emil Ernerfeldt.</p>
 
-<p>Drop-Merge sort is an adaptive unstable sorting algorithm.
-It is designed for nearly-sorted data.
-Drop-Merge sort is especially useful for when &gt;80% of the data is already in-order,
-and the unsorted elements are evenly distributed.
+<p>Drop-Merge sort is an adaptive, unstable sorting algorithm designed for nearly-sorted data.
 An example use-case would be re-sorting an already sorted list after minor modifications.</p>
+
+<p>Drop-Merge sort is especially useful for:</p>
+
+<ul>
+<li>Long lists (&gt;10k elements)</li>
+<li>Where &gt;80% of the data is already in-order</li>
+<li>The unsorted elements are evenly distributed.</li>
+</ul>
 
 <p>Expected number of comparisons is <code>O(N + K * log(K))</code> where <code>K</code> is the number of elements not in order.
 Expected memory usage is <code>O(K)</code>.
-Works best for when <code>K &lt; 0.2 * N</code>.
+Works best when <code>K &lt; 0.2 * N</code>.
 The out-of-order elements are expected to be randomly distributed (NOT clumped).</p>
 
 <h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>

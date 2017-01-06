@@ -1,14 +1,17 @@
 //! Drop-Merge sort created and implemented by Emil Ernerfeldt.
 //!
-//! Drop-Merge sort is an adaptive unstable sorting algorithm.
-//! It is designed for nearly-sorted data.
-//! Drop-Merge sort is especially useful for when >80% of the data is already in-order,
-//! and the unsorted elements are evenly distributed.
+//! Drop-Merge sort is an adaptive, unstable sorting algorithm designed for nearly-sorted data.
 //! An example use-case would be re-sorting an already sorted list after minor modifications.
+//!
+//! Drop-Merge sort is especially useful for:
+//!
+//! * Long lists (>10k elements)
+//! * Where >80% of the data is already in-order
+//! * The unsorted elements are evenly distributed.
 //!
 //! Expected number of comparisons is `O(N + K * log(K))` where `K` is the number of elements not in order.
 //! Expected memory usage is `O(K)`.
-//! Works best for when `K < 0.2 * N`.
+//! Works best when `K < 0.2 * N`.
 //! The out-of-order elements are expected to be randomly distributed (NOT clumped).
 //!
 //! # Examples

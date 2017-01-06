@@ -1,7 +1,7 @@
 # Abstract
 This is an implementation of a novel [adaptive sorting](https://en.wikipedia.org/wiki/Adaptive_sort) algorithm optimized for nearly-sorted data. Drop-Merge sort is especially useful for when >80% of the data is already in-order, and the unsorted elements are evenly distributed. An example use-case would be re-sorting an already sorted list after minor modifications.
 
-Drop-Merge sort is 2-5 times faster than quicksort in cases where >80% of the data is already in order, while being considerably simpler to implement than other adaptive sorting algorithms.
+Drop-Merge sort is 2-5 times faster than quicksort when sorting long lists (10k elements orm ore) in cases where >80% of the data is already in order, while being considerably simpler to implement than other adaptive sorting algorithms.
 
 With `N` elements in the list where `K` elements are out-of-order, Drop-Merge sort performs `O(N + K⋅log(K))` comparisons and use `O(K)` extra memory.
 
@@ -9,7 +9,7 @@ With `N` elements in the list where `K` elements are out-of-order, Drop-Merge so
 Add this to `Cargo.toml`:
 ```
 [dependencies]
-dmsort = "0.1.0"
+dmsort = "0.1.1"
 ```
 
 And then use it:

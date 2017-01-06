@@ -83,18 +83,24 @@
 <span id="38">38</span>
 <span id="39">39</span>
 <span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
 </pre><pre class='rust '>
 <span class='doccomment'>//! Drop-Merge sort created and implemented by Emil Ernerfeldt.</span>
 <span class='doccomment'>//!</span>
-<span class='doccomment'>//! Drop-Merge sort is an adaptive unstable sorting algorithm.</span>
-<span class='doccomment'>//! It is designed for nearly-sorted data.</span>
-<span class='doccomment'>//! Drop-Merge sort is especially useful for when &gt;80% of the data is already in-order,</span>
-<span class='doccomment'>//! and the unsorted elements are evenly distributed.</span>
+<span class='doccomment'>//! Drop-Merge sort is an adaptive, unstable sorting algorithm designed for nearly-sorted data.</span>
 <span class='doccomment'>//! An example use-case would be re-sorting an already sorted list after minor modifications.</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! Drop-Merge sort is especially useful for:</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! * Long lists (&gt;10k elements)</span>
+<span class='doccomment'>//! * Where &gt;80% of the data is already in-order</span>
+<span class='doccomment'>//! * The unsorted elements are evenly distributed.</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! Expected number of comparisons is `O(N + K * log(K))` where `K` is the number of elements not in order.</span>
 <span class='doccomment'>//! Expected memory usage is `O(K)`.</span>
-<span class='doccomment'>//! Works best for when `K &lt; 0.2 * N`.</span>
+<span class='doccomment'>//! Works best when `K &lt; 0.2 * N`.</span>
 <span class='doccomment'>//! The out-of-order elements are expected to be randomly distributed (NOT clumped).</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! # Examples</span>
@@ -121,7 +127,7 @@
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>dmsort</span>::{<span class='ident'>sort</span>, <span class='ident'>sort_by</span>, <span class='ident'>sort_by_key</span>};
 
 <span class='doccomment'>/// For in module-level testing only. TODO: this shouldn&#39;t be public.</span>
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>dmsort</span>::{<span class='ident'>sort_copy</span>};
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>dmsort</span>::<span class='ident'>sort_copy</span>;
 
 <span class='kw'>mod</span> <span class='ident'>dmsort</span>;
 </pre>
