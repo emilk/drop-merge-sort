@@ -20,7 +20,7 @@ const FAST_BACKTRACKING: bool = true;
 /// Break early if we notice that the input is not ordered enough.
 const EARLY_OUT: bool = true;
 
-/// Test for early-out when we have processed len / EARLY_OUT_TEST_AT elements.
+/// Test for early-out when we have processed len / `EARLY_OUT_TEST_AT` elements.
 const EARLY_OUT_TEST_AT: usize = 4;
 
 /// If more than this percentage of elements have been dropped, we abort.
@@ -30,15 +30,15 @@ const EARLY_OUT_DISORDER_FRACTION: f32 = 0.60;
 
 /// Helper function.
 #[inline(always)]
-fn max_in_slice<'a, T, F>(slice: &'a [T], mut compare: F) -> &'a T
+fn max_in_slice<T, F>(slice: &[T], mut compare: F) -> &T
 	where F: FnMut(&T, &T) -> Ordering
 {
 	// slice.iter().max_by(|a, b| compare(a, b)).unwrap() // Not yet stable :(
 	debug_assert!(!slice.is_empty());
 	let mut max = &slice[0];
-	for i in 1..slice.len() {
-		if compare(max, &slice[i]) == Ordering::Less {
-			max = &slice[i];
+	for value in slice.iter().skip(1) {
+		if compare(max, value) == Ordering::Less {
+			max = value;
 		}
 	}
 	max
@@ -72,8 +72,8 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 			&& dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION {
 			// We have seen a lot of the elements and dropped a lot of them.
 			// This doesn't look good. Abort.
-			for i in 0..dropped.len() {
-				slice[write + i] = dropped[i];
+			for (i, &element) in dropped.iter().enumerate() {
+				slice[write + i] = element;
 			}
 			slice.sort_by(|a, b| compare(a, b));
 			return dropped.len() * EARLY_OUT_TEST_AT; // Just an estimate.
@@ -144,7 +144,7 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 					// Back-track until we can accept at least one of the recently dropped elements:
 					let max_of_dropped = max_in_slice(&slice[read..(read + num_dropped_in_row + 1)], |a, b| compare(a, b));
 
-					while 1 <= write && compare(&max_of_dropped, &slice[write - 1]) == Ordering::Less {
+					while 1 <= write && compare(max_of_dropped, &slice[write - 1]) == Ordering::Less {
 						num_backtracked += 1;
 						write -= 1;
 					}
@@ -304,7 +304,7 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 					// Back-track until we can accept at least one of the recently dropped elements:
 					let max_of_dropped = max_in_slice(&s.slice[read..(read + num_dropped_in_row + 1)], |a, b| compare(a, b));
 
-					while 1 <= s.write && compare(&max_of_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
+					while 1 <= s.write && compare(max_of_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
 						num_backtracked += 1;
 						s.write -= 1;
 					}
