@@ -23,7 +23,7 @@ bench = false
 pdqsort = "0.1.0"
 
 [dev-dependencies]
-gnuplot = "0.0.21"
+gnuplot = "0.0.22"
 pbr = "1.0.0-alpha.2"
 quickersort = "2.2.0"
 rand = "0.3.15"
