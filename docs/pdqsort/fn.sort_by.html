@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="API documentation for the Rust `sort_by` fn in crate `dmsort`.">
+    <meta name="description" content="API documentation for the Rust `sort_by` fn in crate `pdqsort`.">
     <meta name="keywords" content="rust, rustlang, rust-lang, sort_by">
 
-    <title>dmsort::sort_by - Rust</title>
+    <title>pdqsort::sort_by - Rust</title>
 
     <link rel="stylesheet" type="text/css" href="../normalize.css">
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
@@ -29,7 +29,7 @@
 
     <nav class="sidebar">
         
-        <p class='location'><a href='index.html'>dmsort</a></p><script>window.sidebarCurrent = {name: 'sort_by', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+        <p class='location'><a href='index.html'>pdqsort</a></p><script>window.sidebarCurrent = {name: 'sort_by', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </nav>
 
     <nav class="sub">
@@ -44,18 +44,28 @@
     </nav>
 
     <section id='main' class="content fn">
-<h1 class='fqn'><span class='in-band'>Function <a href='index.html'>dmsort</a>::<wbr><a class='fn' href=''>sort_by</a></span><span class='out-of-band'><span id='render-detail'>
+<h1 class='fqn'><span class='in-band'>Function <a href='index.html'>pdqsort</a>::<wbr><a class='fn' href=''>sort_by</a></span><span class='out-of-band'><span id='render-detail'>
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/dmsort/dmsort.rs.html#364-368' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn sort_by&lt;T, F&gt;(slice: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, compare: F) <span class='where'>where F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(&amp;T, &amp;T) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html' title='core::cmp::Ordering'>Ordering</a></span></pre><div class='docblock'><p>Sorts the elements using the given compare function.</p>
+               </span><a class='srclink' href='../src/pdqsort/lib.rs.html#608-624' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn sort_by&lt;T, F&gt;(v: &amp;mut [T], compare: F) <span class='where'>where F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(&amp;T, &amp;T) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html' title='core::cmp::Ordering'>Ordering</a></span></pre><div class='docblock'><p>Sorts a slice using <code>compare</code> to compare elements.</p>
+
+<p>This sort is in-place, unstable, and <code>O(n log n)</code> worst-case.</p>
+
+<p>The implementation is based on Orson Peters&#39; pattern-defeating quicksort.</p>
 
 <h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>
 <pre class='rust rust-example-rendered'>
-<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>numbers</span> : <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>i32</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>(<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>);
-<span class='ident'>dmsort</span>::<span class='ident'>sort_by</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>numbers</span>, <span class='op'>|</span><span class='ident'>a</span>, <span class='ident'>b</span><span class='op'>|</span> <span class='ident'>b</span>.<span class='ident'>cmp</span>(<span class='ident'>a</span>));
-<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>numbers</span>, <span class='macro'>vec</span><span class='macro'>!</span>(<span class='number'>7</span>, <span class='number'>6</span>, <span class='number'>5</span>, <span class='number'>4</span>, <span class='number'>3</span>, <span class='number'>2</span>, <span class='number'>1</span>, <span class='number'>0</span>));</pre>
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>pdqsort</span>;
+
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>v</span> <span class='op'>=</span> [<span class='number'>5</span>, <span class='number'>4</span>, <span class='number'>1</span>, <span class='number'>3</span>, <span class='number'>2</span>];
+<span class='ident'>pdqsort</span>::<span class='ident'>sort_by</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>v</span>, <span class='op'>|</span><span class='ident'>a</span>, <span class='ident'>b</span><span class='op'>|</span> <span class='ident'>a</span>.<span class='ident'>cmp</span>(<span class='ident'>b</span>));
+<span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>v</span> <span class='op'>==</span> [<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>]);
+
+<span class='comment'>// reverse sorting</span>
+<span class='ident'>pdqsort</span>::<span class='ident'>sort_by</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>v</span>, <span class='op'>|</span><span class='ident'>a</span>, <span class='ident'>b</span><span class='op'>|</span> <span class='ident'>b</span>.<span class='ident'>cmp</span>(<span class='ident'>a</span>));
+<span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>v</span> <span class='op'>==</span> [<span class='number'>5</span>, <span class='number'>4</span>, <span class='number'>3</span>, <span class='number'>2</span>, <span class='number'>1</span>]);</pre>
 </div></section>
     <section id='search' class="content hidden"></section>
 
@@ -111,7 +121,7 @@
 
     <script>
         window.rootPath = "../";
-        window.currentCrate = "dmsort";
+        window.currentCrate = "pdqsort";
     </script>
     <script src="../jquery.js"></script>
     <script src="../main.js"></script>

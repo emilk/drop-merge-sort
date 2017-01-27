@@ -44,14 +44,20 @@ function generate_test_data(length, disorder_factor) -> Vec {
 }
 ```
 
-Comparing this to the default Rust sorting algorithm ([Vec::sort](https://doc.rust-lang.org/beta/std/vec/struct.Vec.html#method.sort), a [stable sorting algorithm](https://github.com/rust-lang/rust/pull/38192) based loosely on [Timsort](https://en.wikipedia.org/wiki/Timsort)) and [dual-pivot quicksort](https://github.com/notriddle/quickersort) for different disorder factors. The compiler was `rustc 1.15.0-nightly (71c06a56a 2016-12-18)`.
+I then benchmarked Drop-Merge sort against:
+
+* the default Rust sorting algorithm ([Vec::sort](https://doc.rust-lang.org/beta/std/vec/struct.Vec.html#method.sort), a [stable sorting algorithm](https://github.com/rust-lang/rust/pull/38192) based loosely on [Timsort](https://en.wikipedia.org/wiki/Timsort))
+* [pdqsort (pattern-defeating quicksort)](https://github.com/stjepang/pdqsort)
+* [quickersort (dual-pivot quicksort)](https://github.com/notriddle/quickersort)
+
+The compiler was `rustc 1.16.0-nightly (7e38a89a7 2017-01-06)`.
 
 ![Comparing Drop-Merge sort](images/comparisons_1M_i32.png)
 ![Comparing Drop-Merge sort](images/comparisons_1M_string.png)
 
-We can see that all three algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the disorder factor is less than 35% (more than 65% of the elements are in order).
+We can see that all four algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the disorder factor is less than 35% (more than 65% of the elements are in order).
 
-It also behaves well when the data becomes more random, and at its worst it is still only ~30% slower than quicksort.
+It also behaves well when the data becomes more random, and at its worst it is still only ~10% slower than pdqsort (which Drop-Merge sort uses as fallback).
 
 Here is another view of the data for 0-50% disorder:
 
@@ -90,7 +96,7 @@ The naïve Dropsort algorithm will accept `0 1 12` and then drop the remaining v
 
 Drop-Merge sort will keep in-order elements in situ, moving them towards the start of the list. This helps keep the memory use down and the performance up.
 
-If the elements are not ordered Drop-Merge sort can be around 30% slower than a traditional sorting algorithm. Therefore Drop-Merge sort will try to detect such disordered input and abort, falling back to the standard sorting algorithm.
+If the elements are not ordered Drop-Merge sort can be around 10% slower than a traditional sorting algorithm. Therefore Drop-Merge sort will try to detect such disordered input and abort, falling back to the standard sorting algorithm.
 
 ## Comparison to other adaptive sorting algorithms
 An adaptive sorting algorithm is one that can exploit existing order. These algorithms ranges from the complicated to the simple.
