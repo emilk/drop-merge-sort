@@ -2,6 +2,7 @@ extern crate dmsort;
 
 extern crate gnuplot;
 extern crate pbr;
+extern crate pdqsort;
 extern crate quickersort;
 extern crate rand;
 extern crate time;
@@ -80,6 +81,7 @@ fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
 	pb.message(&format!("Benchmarking {} {}: ", length_str, element_type_long));
 
 	let mut std_ms_list         = vec![];
+	let mut pdq_ms_list     = vec![];
 	let mut quicker_ms_list     = vec![];
 	let mut dmsort_ms_list      = vec![];
 	let mut dmsort_speedup_list = vec![];
@@ -87,15 +89,18 @@ fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
 	for &disorder_factor in &bench_disorders {
 		let vec = generator(rng, length, disorder_factor);
 		let (std_ms,     std_sorted)     = time_sort_ms(num_best_of, &vec, |x| x.sort());
+		let (pdq_ms,     pdq_sorted)     = time_sort_ms(num_best_of, &vec, |x| pdqsort::sort(x));
 		let (quicker_ms, quicker_sorted) = time_sort_ms(num_best_of, &vec, |x| quickersort::sort(x));
 		let (dmsort_ms,  dmsort_sorted)  = time_sort_ms(num_best_of, &vec, |x| dmsort::sort(x));
 
-		let fastest_competitor_ms = std_ms.min(quicker_ms);
+		let fastest_competitor_ms = std_ms.min(pdq_ms).min(quicker_ms);
 
-		assert_eq!(dmsort_sorted,  std_sorted);
+		assert_eq!(pdq_sorted,     std_sorted);
 		assert_eq!(quicker_sorted, std_sorted);
+		assert_eq!(dmsort_sorted,  std_sorted);
 
 		std_ms_list.push(std_ms);
+		pdq_ms_list.push(pdq_ms);
 		quicker_ms_list.push(quicker_ms);
 		dmsort_ms_list.push(dmsort_ms);
 		dmsort_speedup_list.push(fastest_competitor_ms / dmsort_ms);
@@ -120,7 +125,8 @@ fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
 		.set_x_label("Disorder (%)", &[])
 		.set_y_label("ms", &[])
 		.lines(&disorder_percentages, &std_ms_list,     &[Caption("Vec::sort"),       Color("#FF0000"), LineWidth(2.0)])
-		.lines(&disorder_percentages, &quicker_ms_list, &[Caption("Quicksort"),       Color("#00BB00"), LineWidth(2.0)])
+		.lines(&disorder_percentages, &pdq_ms_list,     &[Caption("pdqsort"),         Color("#BBBB00"), LineWidth(2.0)])
+		.lines(&disorder_percentages, &quicker_ms_list, &[Caption("quickersort"),     Color("#00BB00"), LineWidth(2.0)])
 		.lines(&disorder_percentages, &dmsort_ms_list,  &[Caption("Drop-Merge Sort"), Color("#4444FF"), LineWidth(2.0)]);
 		figure.show();
 	}
@@ -148,15 +154,18 @@ fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
 fn bench_evil() {
 	let evil_input : Vec<_> = (100..1000000).chain(0..100).collect();
 	let (std_ms,     std_sorted)     = time_sort_ms(10, &evil_input, |x| x.sort());
+	let (pdq_ms,     pdq_sorted)     = time_sort_ms(10, &evil_input, |x| pdqsort::sort(x));
 	let (quicker_ms, quicker_sorted) = time_sort_ms(10, &evil_input, |x| quickersort::sort(x));
 	let (drop_ms,    drop_sorted)    = time_sort_ms(10, &evil_input, |x| dmsort::sort(x));
 	// let (drop_ms,    drop_sorted)    = time_sort_ms(10, &evil_input, |x| {dmsort::sort_copy(x); ()});
 
 	assert_eq!(std_sorted, drop_sorted);
+	assert_eq!(std_sorted, pdq_sorted);
 	assert_eq!(std_sorted, quicker_sorted);
 	println!("Worst-case input:");
 	println!("std::sort:       {} ms", std_ms);
-	println!("Quicksort:       {} ms", quicker_ms);
+	println!("pdqsort:         {} ms", pdq_ms);
+	println!("quickersort:     {} ms", quicker_ms);
 	println!("Drop-Merge sort: {} ms", drop_ms);
 }
 
