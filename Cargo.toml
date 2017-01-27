@@ -19,6 +19,9 @@ path = "src/lib.rs"
 test = false
 bench = false
 
+[dependencies]
+pdqsort = "0.1.0"
+
 [dev-dependencies]
 gnuplot = "0.0.21"
 pbr = "1.0.0-alpha.2"
