@@ -1,6 +1,6 @@
 set -e
-# rustup default stable
-rustup default nightly # Has a faster sort than stable as of January 2017
+rustup default stable
+# rustup default nightly
 
 # export RUST_BACKTRACE=1
 cargo test

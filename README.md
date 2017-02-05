@@ -50,22 +50,22 @@ I then benchmarked Drop-Merge sort against:
 * [pdqsort (pattern-defeating quicksort)](https://github.com/stjepang/pdqsort)
 * [quickersort (dual-pivot quicksort)](https://github.com/notriddle/quickersort)
 
-The compiler was `rustc 1.16.0-nightly (7e38a89a7 2017-01-06)`.
+The benchmark was run on an MacBook Pro Retina (Early 2013) using `rustc 1.15.0 (10893a9a3 2017-01-19)`.
 
 ![Comparing Drop-Merge sort](images/comparisons_1M_i32.png)
 ![Comparing Drop-Merge sort](images/comparisons_1M_string.png)
 
-We can see that all four algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the disorder factor is less than 35% (more than 65% of the elements are in order).
+We can see that all four algorithms manages to exploit almost-sorted data, but Drop-Merge sort wins out when the disorder factor is less than 30% (more than 70% of the elements are in order).
 
-It also behaves well when the data becomes more random, and at its worst it is still only ~10% slower than pdqsort (which Drop-Merge sort uses as fallback).
+It also behaves well when the data becomes more random, and at its worst it is still only ~30% slower than pdqsort (which Drop-Merge sort uses as fallback).
 
 Here is another view of the data for 0-50% disorder:
 
-![Speedup over quicksort](images/speedup_1M_string.png)
+![Speedup over quicksort](images/speedup_1M_i32.png)
 
 Here we can see that we get 5x speedup over quicksort when 99% of the elements are in order, and a 2x speedup when 85% of the elements are in order.
 
-When the disorder is above 35% (less than 65% of the elements are in order), Drop-Merge sort is slower than its competitors.
+When the disorder is above 30% (less than 70% of the elements are in order), Drop-Merge sort is slower than its competitors.
 
 # Algorithm details
 ## Background
@@ -82,7 +82,7 @@ The main idea in Drop-Merge sort is this:
 
 * Use the methods described in the Jackson et al. paper to find the Longest Nondecreasing Subsequence (LNS).
 * Keep the LNS and drop the outliers into a separate list.
-* Sort the list of dropped outliers using a standard sorting algorithm (such as quicksort).
+* Sort the list of dropped outliers using a standard sorting algorithm ([pdqsort](https://github.com/stjepang/pdqsort), in this implementation).
 * Merge the outliers back into the main list of the already sorted LNS.
 
 Thus despite its heritage, Drop-Merge sort is a *lossless* sorting algorithm (the normal kind).
@@ -110,8 +110,6 @@ Drop-Merge sort finds an interesting middle-ground – it is reasonably simple (
 ## When Drop-Merge sort works best
 * Less than 20-30% of the elements out of order AND these are randomly distributed in the data (not clumped).
 * You have a lot of data (10k elements or more, and definitively when you get into the millions).
-
-Furthermore, the biggest gain in Drop-Merge Sort comes from less comparisons. So the more expensive your comparison function is, the bigger gains you will see.
 
 
 ## Limitations and future work

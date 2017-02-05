@@ -4,7 +4,7 @@ version = "0.1.1"
 dependencies = [
  "gnuplot 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "pbr 1.0.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "pdqsort 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pdqsort 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "quickersort 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -60,7 +60,7 @@ dependencies = [
 
 [[package]]
 name = "pdqsort"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -122,7 +122,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum num-traits 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)" = "a16a42856a256b39c6d3484f097f6713e14feacd9bfb02290917904fae46c81c"
 "checksum odds 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)" = "c3df9b730298cea3a1c3faa90b7e2f9df3a9c400d0936d6015e6165734eefcba"
 "checksum pbr 1.0.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)" = "5b2863afb7ac4372d578cafbeca1e10435e56d5d57acf63b54bc7b376c6b809b"
-"checksum pdqsort 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "afe9dd903f4f9ae691c768e649b00bac33d0487e0ca3edac94054a554b8a1588"
+"checksum pdqsort 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9b488405652f1d330f26e3112a477b12b49a70589372cb50aea2e29ebeb5ba54"
 "checksum quickersort 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "14ae8f367c38c78abd03114e524b55a817885446662413fbca951f42848450c5"
 "checksum rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "022e0636ec2519ddae48154b028864bdce4eaf7d35226ab8e65c611be97b189d"
 "checksum time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)" = "3c7ec6d62a20df54e07ab3b78b9a3932972f4b7981de295563686849eb3989af"

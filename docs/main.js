@@ -609,7 +609,7 @@
                               displayPath + '<span class="' + type + '">' +
                               name + '</span></a></td><td>' +
                               '<a href="' + href + '">' +
-                              '<span class="desc">' + escape(item.desc) +
+                              '<span class="desc">' + item.desc +
                               '&nbsp;</span></a></td></tr>';
                 });
             } else {
@@ -807,6 +807,14 @@
             search();
         }
 
+        function plainSummaryLine(markdown) {
+            markdown.replace(/\n/g, ' ')
+            .replace(/'/g, "\'")
+            .replace(/^#+? (.+?)/, "$1")
+            .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+            .replace(/\[(.*?)\]\[.*?\]/g, "$1");
+        }
+
         index = buildIndex(rawSearchIndex);
         startSearch();
 
@@ -828,10 +836,13 @@
                 if (crates[i] === window.currentCrate) {
                     klass += ' current';
                 }
-                var link = $('<a>', {'href': '../' + crates[i] + '/index.html',
-                                     'title': rawSearchIndex[crates[i]].doc,
-                                     'class': klass}).text(crates[i]);
-                ul.append($('<li>').append(link));
+                if (rawSearchIndex[crates[i]].items[0]) {
+                    var desc = rawSearchIndex[crates[i]].items[0][3];
+                    var link = $('<a>', {'href': '../' + crates[i] + '/index.html',
+                                         'title': plainSummaryLine(desc),
+                                         'class': klass}).text(crates[i]);
+                    ul.append($('<li>').append(link));
+                }
             }
             sidebar.append(div);
         }
