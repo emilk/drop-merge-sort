@@ -30,24 +30,6 @@ const EARLY_OUT_DISORDER_FRACTION: f32 = 0.60;
 
 // ----------------------------------------------------------------------------
 
-/// Helper function.
-#[inline(always)]
-fn max_in_slice<T, F>(slice: &[T], mut compare: F) -> &T
-	where F: FnMut(&T, &T) -> Ordering
-{
-	// slice.iter().max_by(|a, b| compare(a, b)).unwrap() // Not yet stable :(
-	debug_assert!(!slice.is_empty());
-	let mut max = &slice[0];
-	for value in slice.iter().skip(1) {
-		if compare(max, value) == Ordering::Less {
-			max = value;
-		}
-	}
-	max
-}
-
-// ----------------------------------------------------------------------------
-
 /// This is the readable reference implementation that only works for Copy types.
 /// Returns the number of dropped elements for diagnostic purposes.
 fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
@@ -67,10 +49,13 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	let mut num_dropped_in_row = 0;
 	let mut write = 0; // Index of where to write the next element to keep.
 	let mut read  = 0; // Index of the input stream.
+	let mut iteration = 0;
+	let ealy_out_stop = slice.len() / EARLY_OUT_TEST_AT;
 
 	while read < slice.len() {
+		iteration += 1;
 		if EARLY_OUT
-			&& read == slice.len() / EARLY_OUT_TEST_AT
+			&& iteration == ealy_out_stop
 			&& dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION {
 			// We have seen a lot of the elements and dropped a lot of them.
 			// This doesn't look good. Abort.
@@ -144,7 +129,8 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 
 				if FAST_BACKTRACKING {
 					// Back-track until we can accept at least one of the recently dropped elements:
-					let max_of_dropped = max_in_slice(&slice[read..(read + num_dropped_in_row + 1)], |a, b| compare(a, b));
+					let max_of_dropped = slice[read..(read + num_dropped_in_row + 1)]
+						.iter().max_by(|a, b| compare(a, b)).unwrap();
 
 					while 1 <= write && compare(max_of_dropped, &slice[write - 1]) == Ordering::Less {
 						num_backtracked += 1;
@@ -256,10 +242,13 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 
 	let mut num_dropped_in_row = 0;
 	let mut read = 0;
+	let mut iteration = 0;
+	let ealy_out_stop = s.slice.len() / EARLY_OUT_TEST_AT;
 
 	while read < s.slice.len() {
+		iteration += 1;
 		if EARLY_OUT
-			&& read == s.slice.len() / EARLY_OUT_TEST_AT
+			&& iteration == ealy_out_stop
 			&& s.dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION {
 			// We have seen a lot of the elements and dropped a lot of them.
 			// This doesn't look good. Abort.
@@ -304,7 +293,8 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 
 				if FAST_BACKTRACKING {
 					// Back-track until we can accept at least one of the recently dropped elements:
-					let max_of_dropped = max_in_slice(&s.slice[read..(read + num_dropped_in_row + 1)], |a, b| compare(a, b));
+					let max_of_dropped = s.slice[read..(read + num_dropped_in_row + 1)]
+						.iter().max_by(|a, b| compare(a, b)).unwrap();
 
 					while 1 <= s.write && compare(max_of_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
 						num_backtracked += 1;

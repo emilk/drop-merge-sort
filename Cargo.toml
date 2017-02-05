@@ -1,6 +1,6 @@
 [package]
 name = "dmsort"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Emil Ernerfeldt <emilernerfeldt@gmail.com>"]
 description = """
 Fast adaptive sorting for when most of your data is already in order.
@@ -10,6 +10,7 @@ documentation = "https://emilk.github.io/drop-merge-sort/dmsort/index.html"
 repository = "https://github.com/emilk/drop-merge-sort"
 readme = "README.md"
 keywords = ["sorting", "sort", "adaptive"]
+categories = ["algorithms"]
 license = "MIT"
 include = [ "**/*.rs", "Cargo.toml", ]
 

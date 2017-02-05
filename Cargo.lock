@@ -1,6 +1,6 @@
 [root]
 name = "dmsort"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "gnuplot 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "pbr 1.0.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)",

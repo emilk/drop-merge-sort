@@ -81,7 +81,7 @@ fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
 	pb.message(&format!("Benchmarking {} {}: ", length_str, element_type_long));
 
 	let mut std_ms_list         = vec![];
-	let mut pdq_ms_list     = vec![];
+	let mut pdq_ms_list         = vec![];
 	let mut quicker_ms_list     = vec![];
 	let mut dmsort_ms_list      = vec![];
 	let mut dmsort_speedup_list = vec![];
