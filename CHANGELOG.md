@@ -1,3 +1,6 @@
+# 0.1.3 - 2017-05-08
+Update pdqsort to 0.1.2 and update pbr to fix compilation issue due to https://github.com/rust-lang/rust/issues/40952#issuecomment-293720927
+
 # 0.1.2 - 2017-02-05
 Update pdqsort to 0.1.1
 
