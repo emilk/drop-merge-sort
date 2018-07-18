@@ -82,7 +82,7 @@ The main idea in Drop-Merge sort is this:
 
 * Use the methods described in the Jackson et al. paper to find the Longest Nondecreasing Subsequence (LNS).
 * Keep the LNS and drop the outliers into a separate list.
-* Sort the list of dropped outliers using a standard sorting algorithm ([pdqsort](https://github.com/stjepang/pdqsort), in this implementation).
+* Sort the list of dropped outliers using a standard sorting algorithm ([`sort_unstable`](https://doc.rust-lang.org/std/primitive.slice.html#method.sort_unstable) in this implementation).
 * Merge the outliers back into the main list of the already sorted LNS.
 
 Thus despite its heritage, Drop-Merge sort is a *lossless* sorting algorithm (the normal kind).

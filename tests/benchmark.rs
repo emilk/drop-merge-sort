@@ -2,7 +2,6 @@ extern crate dmsort;
 
 extern crate gnuplot;
 extern crate pbr;
-extern crate pdqsort;
 extern crate quickersort;
 extern crate rand;
 extern crate time;
@@ -89,7 +88,7 @@ fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
 	for &disorder_factor in &bench_disorders {
 		let vec = generator(rng, length, disorder_factor);
 		let (std_ms,     std_sorted)     = time_sort_ms(num_best_of, &vec, |x| x.sort());
-		let (pdq_ms,     pdq_sorted)     = time_sort_ms(num_best_of, &vec, |x| pdqsort::sort(x));
+		let (pdq_ms,     pdq_sorted)     = time_sort_ms(num_best_of, &vec, |x| x.sort_unstable());
 		let (quicker_ms, quicker_sorted) = time_sort_ms(num_best_of, &vec, |x| quickersort::sort(x));
 		let (dmsort_ms,  dmsort_sorted)  = time_sort_ms(num_best_of, &vec, |x| dmsort::sort(x));
 
@@ -158,7 +157,7 @@ fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
 fn bench_evil() {
 	let evil_input : Vec<_> = (100..1000000).chain(0..100).collect();
 	let (std_ms,     std_sorted)     = time_sort_ms(10, &evil_input, |x| x.sort());
-	let (pdq_ms,     pdq_sorted)     = time_sort_ms(10, &evil_input, |x| pdqsort::sort(x));
+	let (pdq_ms,     pdq_sorted)     = time_sort_ms(10, &evil_input, |x| x.sort_unstable());
 	let (quicker_ms, quicker_sorted) = time_sort_ms(10, &evil_input, |x| quickersort::sort(x));
 	let (drop_ms,    drop_sorted)    = time_sort_ms(10, &evil_input, |x| dmsort::sort(x));
 	// let (drop_ms,    drop_sorted)    = time_sort_ms(10, &evil_input, |x| {dmsort::sort_copy(x); ()});

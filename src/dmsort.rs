@@ -1,7 +1,5 @@
 // Copyright (c) 2017 Emil Ernerfeldt
 
-extern crate pdqsort;
-
 use std::cmp::Ordering;
 use std::mem;
 use std::ptr;
@@ -62,7 +60,7 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 			for (i, &element) in dropped.iter().enumerate() {
 				slice[write + i] = element;
 			}
-			pdqsort::sort_by(slice, |a, b| compare(a, b));
+			slice.sort_unstable_by(|a, b| compare(a, b));
 			return dropped.len() * EARLY_OUT_TEST_AT; // Just an estimate.
 		}
 
@@ -151,7 +149,7 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	// ------------------------------------------------------------------------
 	// Second step: sort the dropped elements:
 
-	pdqsort::sort_by(&mut dropped, |a, b| compare(a, b));
+	dropped.sort_unstable_by(|a, b| compare(a, b));
 
 	// ------------------------------------------------------------------------
 	// Third step: merge slice[..write] and `dropped`:
@@ -254,7 +252,7 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 			// This doesn't look good. Abort.
 			ptr::copy_nonoverlapping(s.dropped.as_ptr(), &mut s.slice[s.write], s.dropped.len());
 			s.dropped.set_len(0);
-			pdqsort::sort_by(&mut s.slice, |a, b| compare(a, b));
+			s.slice.sort_unstable_by(|a, b| compare(a, b));
 			return;
 		}
 
@@ -318,7 +316,7 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 
 	// ------------------------------------------------------------------------
 
-	pdqsort::sort_by(&mut s.dropped, |a, b| compare(a, b));
+	s.dropped.sort_unstable_by(|a, b| compare(a, b));
 
 	// ------------------------------------------------------------------------
 	// Merge:
