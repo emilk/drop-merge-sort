@@ -1,6 +1,6 @@
 [package]
 name = "dmsort"
-version = "0.1.3"
+version = "1.0.0"
 authors = ["Emil Ernerfeldt <emilernerfeldt@gmail.com>"]
 description = """
 Fast adaptive sorting for when most of your data is already in order.

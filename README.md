@@ -11,7 +11,7 @@ Definition: X% of elements are in order if the [Longest Nondecreasing Subsequenc
 Add this to `Cargo.toml`:
 ```
 [dependencies]
-dmsort = "0.1.3"
+dmsort = "1.0.0"
 ```
 
 And then use it:
