@@ -35,8 +35,12 @@ fn simple_tests() {
 	test(vec![0, 1, 10, 3, 4, 5, 6, 7, 8, 9]);
 	test(vec![10, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 	test(vec![0, 0, 2, 3, 4, 1, 6, 1, 8, 9]);
-	test(vec![20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
-	test(vec![20, 21, 2, 23, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+	test(vec![
+		20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+	]);
+	test(vec![
+		20, 21, 2, 23, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+	]);
 }
 
 #[test]
@@ -47,8 +51,8 @@ fn test_unwind() {
 	// This is crucial in order to prevent double-frees.
 	//
 	struct TestSortType<'a> {
-		id:          usize,
-		dropped:     &'a RefCell<BTreeSet<usize>>,
+		id: usize,
+		dropped: &'a RefCell<BTreeSet<usize>>,
 	}
 	impl<'a> Drop for TestSortType<'a> {
 		fn drop(&mut self) {
@@ -64,13 +68,34 @@ fn test_unwind() {
 
 		let catch_result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
 			let mut data = [
-				TestSortType{id: 0, dropped: &dropped},
-				TestSortType{id: 1, dropped: &dropped},
-				TestSortType{id: 5, dropped: &dropped},
-				TestSortType{id: 6, dropped: &dropped},
-				TestSortType{id: 2, dropped: &dropped},
-				TestSortType{id: 3, dropped: &dropped},
-				TestSortType{id: 4, dropped: &dropped},
+				TestSortType {
+					id: 0,
+					dropped: &dropped,
+				},
+				TestSortType {
+					id: 1,
+					dropped: &dropped,
+				},
+				TestSortType {
+					id: 5,
+					dropped: &dropped,
+				},
+				TestSortType {
+					id: 6,
+					dropped: &dropped,
+				},
+				TestSortType {
+					id: 2,
+					dropped: &dropped,
+				},
+				TestSortType {
+					id: 3,
+					dropped: &dropped,
+				},
+				TestSortType {
+					id: 4,
+					dropped: &dropped,
+				},
 			];
 			let mut num_comparisons = 0;
 
@@ -81,8 +106,10 @@ fn test_unwind() {
 				num_comparisons += 1;
 				a.id.cmp(&b.id)
 			});
-			panic!("We where supposed to abort after {} comparisons, but we only did {}",
-			       break_after_this_many_comparisons, num_comparisons);
+			panic!(
+				"We where supposed to abort after {} comparisons, but we only did {}",
+				break_after_this_many_comparisons, num_comparisons
+			);
 		}));
 
 		// Make sure we did panic:

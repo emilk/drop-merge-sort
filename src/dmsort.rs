@@ -30,8 +30,9 @@ const EARLY_OUT_DISORDER_FRACTION: f32 = 0.60;
 /// This is the readable reference implementation that only works for Copy types.
 /// Returns the number of dropped elements for diagnostic purposes.
 fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
-	where T: Copy,
-	      F: FnMut(&T, &T) -> Ordering
+where
+	T: Copy,
+	F: FnMut(&T, &T) -> Ordering,
 {
 	if slice.len() < 2 {
 		return slice.len();
@@ -45,15 +46,13 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 	let mut dropped = Vec::new();
 	let mut num_dropped_in_row = 0;
 	let mut write = 0; // Index of where to write the next element to keep.
-	let mut read  = 0; // Index of the input stream.
+	let mut read = 0; // Index of the input stream.
 	let mut iteration = 0;
 	let ealy_out_stop = slice.len() / EARLY_OUT_TEST_AT;
 
 	while read < slice.len() {
 		iteration += 1;
-		if EARLY_OUT
-			&& iteration == ealy_out_stop
-			&& dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION {
+		if EARLY_OUT && iteration == ealy_out_stop && dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION {
 			// We have seen a lot of the elements and dropped a lot of them.
 			// This doesn't look good. Abort.
 			for (i, &element) in dropped.iter().enumerate() {
@@ -74,17 +73,16 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 			// The question is - should we drop the new element, or was accepting the previous element a mistake?
 
 			/*
-			   Check this situation:
-			   0 1 2 3 9 5 6 7  (the 9 is a one-off)
-			           | |
-			           | read
-			           write - 1
+				Check this situation:
+				. 0 1 2 3 9 5 6 7  (the 9 is a one-off)
+				.         | |
+				.         | read
+				.         write - 1
 				Checking this improves performance because we catch common problems earlier (without back-tracking).
 			*/
 			if DOUBLE_COMPARISONS
 				&& num_dropped_in_row == 0
-				&& 2 <= write
-				&& compare(&slice[read], &slice[write - 2]) != Ordering::Less
+				&& 2 <= write && compare(&slice[read], &slice[write - 2]) != Ordering::Less
 			{
 				// Quick undo: drop previously accepted element, and overwrite with new one:
 				dropped.push(slice[write - 1]);
@@ -127,7 +125,9 @@ fn sort_copy_by<T, F>(slice: &mut [T], mut compare: F) -> usize
 				if FAST_BACKTRACKING {
 					// Back-track until we can accept at least one of the recently dropped elements:
 					let max_of_dropped = slice[read..(read + num_dropped_in_row + 1)]
-						.iter().max_by(|a, b| compare(a, b)).unwrap();
+						.iter()
+						.max_by(|a, b| compare(a, b))
+						.unwrap();
 
 					while 1 <= write && compare(max_of_dropped, &slice[write - 1]) == Ordering::Less {
 						num_backtracked += 1;
@@ -193,13 +193,14 @@ struct DmSorter<'a, T: 'a> {
 
 	/// Index in self.slice of where to write the next element to keep.
 	write: usize,
-
 	// slice[write..(write + dropped.len())] is a gap. The elements can be found in dropped
 }
 
 impl<'a, T> Drop for DmSorter<'a, T> {
 	fn drop(&mut self) {
-		if self.dropped.is_empty() { return; }
+		if self.dropped.is_empty() {
+			return;
+		}
 		unsafe {
 			// This code will only run on stack-unwind (panic).
 
@@ -226,118 +227,136 @@ unsafe fn unsafe_copy<T>(slice: &mut [T], source: usize, dest: usize) {
 }
 
 fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
-	where F: FnMut(&T, &T) -> Ordering
-{ unsafe {
-	if slice.len() < 2 { return; }
-
-	let mut s = DmSorter{
-		slice:   slice,
-		dropped: Vec::new(),
-		write:   0,
-	};
-
-	// ------------------------------------------------------------------------
-
-	let mut num_dropped_in_row = 0;
-	let mut read = 0;
-	let mut iteration = 0;
-	let ealy_out_stop = s.slice.len() / EARLY_OUT_TEST_AT;
-
-	while read < s.slice.len() {
-		iteration += 1;
-		if EARLY_OUT
-			&& iteration == ealy_out_stop
-			&& s.dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION {
-			// We have seen a lot of the elements and dropped a lot of them.
-			// This doesn't look good. Abort.
-			ptr::copy_nonoverlapping(s.dropped.as_ptr(), &mut s.slice[s.write], s.dropped.len());
-			s.dropped.set_len(0);
-			s.slice.sort_unstable_by(|a, b| compare(a, b));
+where
+	F: FnMut(&T, &T) -> Ordering,
+{
+	unsafe {
+		if slice.len() < 2 {
 			return;
 		}
 
-		if s.write == 0 || compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 1)) != Ordering::Less {
-			// The element is order - keep it:
-			unsafe_copy(&mut s.slice, read, s.write);
-			read += 1;
-			s.write += 1;
-			num_dropped_in_row = 0;
-		} else {
-			if DOUBLE_COMPARISONS
-				&& num_dropped_in_row == 0
-				&& 2 <= s.write
-				&& compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 2)) != Ordering::Less
+		let mut s = DmSorter {
+			slice: slice,
+			dropped: Vec::new(),
+			write: 0,
+		};
+
+		// ------------------------------------------------------------------------
+
+		let mut num_dropped_in_row = 0;
+		let mut read = 0;
+		let mut iteration = 0;
+		let ealy_out_stop = s.slice.len() / EARLY_OUT_TEST_AT;
+
+		while read < s.slice.len() {
+			iteration += 1;
+			if EARLY_OUT
+				&& iteration == ealy_out_stop
+				&& s.dropped.len() as f32 > read as f32 * EARLY_OUT_DISORDER_FRACTION
 			{
-				// Quick undo: drop previously accepted element, and overwrite with new one:
-				unsafe_push(&mut s.dropped, s.slice.get_unchecked(s.write - 1));
-				unsafe_copy(&mut s.slice, read, s.write - 1);
-				read += 1;
-				continue;
+				// We have seen a lot of the elements and dropped a lot of them.
+				// This doesn't look good. Abort.
+				ptr::copy_nonoverlapping(s.dropped.as_ptr(), &mut s.slice[s.write], s.dropped.len());
+				s.dropped.set_len(0);
+				s.slice.sort_unstable_by(|a, b| compare(a, b));
+				return;
 			}
 
-			if num_dropped_in_row < RECENCY {
-				// Drop it:
-				unsafe_push(&mut s.dropped, s.slice.get_unchecked(read));
+			if s.write == 0
+				|| compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 1)) != Ordering::Less
+			{
+				// The element is order - keep it:
+				unsafe_copy(&mut s.slice, read, s.write);
 				read += 1;
-				num_dropped_in_row += 1;
-			} else {
-				// Undo dropping the last num_dropped_in_row elements:
-				let trunc_to_length = s.dropped.len() - num_dropped_in_row;
-				s.dropped.set_len(trunc_to_length);
-				read -= num_dropped_in_row;
-
-				let mut num_backtracked = 1;
-				s.write -= 1;
-
-				if FAST_BACKTRACKING {
-					// Back-track until we can accept at least one of the recently dropped elements:
-					let max_of_dropped = s.slice[read..(read + num_dropped_in_row + 1)]
-						.iter().max_by(|a, b| compare(a, b)).unwrap();
-
-					while 1 <= s.write && compare(max_of_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
-						num_backtracked += 1;
-						s.write -= 1;
-					}
-				}
-
-				// Append s.slice[read..(read + num_backtracked)] to s.dropped:
-				{
-					let old_len = s.dropped.len();
-					s.dropped.reserve(num_backtracked);
-					ptr::copy_nonoverlapping(s.slice.get_unchecked(s.write), s.dropped.get_unchecked_mut(old_len), num_backtracked);
-					s.dropped.set_len(old_len + num_backtracked);
-				}
-
+				s.write += 1;
 				num_dropped_in_row = 0;
+			} else {
+				if DOUBLE_COMPARISONS
+					&& num_dropped_in_row == 0
+					&& 2 <= s.write && compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 2))
+					!= Ordering::Less
+				{
+					// Quick undo: drop previously accepted element, and overwrite with new one:
+					unsafe_push(&mut s.dropped, s.slice.get_unchecked(s.write - 1));
+					unsafe_copy(&mut s.slice, read, s.write - 1);
+					read += 1;
+					continue;
+				}
+
+				if num_dropped_in_row < RECENCY {
+					// Drop it:
+					unsafe_push(&mut s.dropped, s.slice.get_unchecked(read));
+					read += 1;
+					num_dropped_in_row += 1;
+				} else {
+					// Undo dropping the last num_dropped_in_row elements:
+					let trunc_to_length = s.dropped.len() - num_dropped_in_row;
+					s.dropped.set_len(trunc_to_length);
+					read -= num_dropped_in_row;
+
+					let mut num_backtracked = 1;
+					s.write -= 1;
+
+					if FAST_BACKTRACKING {
+						// Back-track until we can accept at least one of the recently dropped elements:
+						let max_of_dropped = s.slice[read..(read + num_dropped_in_row + 1)]
+							.iter()
+							.max_by(|a, b| compare(a, b))
+							.unwrap();
+
+						while 1 <= s.write
+							&& compare(max_of_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less
+						{
+							num_backtracked += 1;
+							s.write -= 1;
+						}
+					}
+
+					// Append s.slice[read..(read + num_backtracked)] to s.dropped:
+					{
+						let old_len = s.dropped.len();
+						s.dropped.reserve(num_backtracked);
+						ptr::copy_nonoverlapping(
+							s.slice.get_unchecked(s.write),
+							s.dropped.get_unchecked_mut(old_len),
+							num_backtracked,
+						);
+						s.dropped.set_len(old_len + num_backtracked);
+					}
+
+					num_dropped_in_row = 0;
+				}
 			}
 		}
-	}
 
-	// ------------------------------------------------------------------------
+		// ------------------------------------------------------------------------
 
-	s.dropped.sort_unstable_by(|a, b| compare(a, b));
+		s.dropped.sort_unstable_by(|a, b| compare(a, b));
 
-	// ------------------------------------------------------------------------
-	// Merge:
+		// ------------------------------------------------------------------------
+		// Merge:
 
-	let mut back = s.slice.len();
+		let mut back = s.slice.len();
 
-	loop {
-		let old_len = s.dropped.len();
-		if old_len == 0 { break; }
-		{
-			let last_dropped = s.dropped.get_unchecked(old_len - 1);
-			while 0 < s.write && compare(last_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
-				unsafe_copy(&mut s.slice, s.write - 1, back - 1);
-				back -= 1;
-				s.write -= 1;
+		loop {
+			let old_len = s.dropped.len();
+			if old_len == 0 {
+				break;
 			}
-			ptr::copy_nonoverlapping(last_dropped, s.slice.get_unchecked_mut(back - 1), 1);
+			{
+				let last_dropped = s.dropped.get_unchecked(old_len - 1);
+				while 0 < s.write && compare(last_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
+					unsafe_copy(&mut s.slice, s.write - 1, back - 1);
+					back -= 1;
+					s.write -= 1;
+				}
+				ptr::copy_nonoverlapping(last_dropped, s.slice.get_unchecked_mut(back - 1), 1);
+			}
+			back -= 1;
+			s.dropped.set_len(old_len - 1);
 		}
-		back -= 1;
-		s.dropped.set_len(old_len - 1);
 	}
-} }
+}
 
 // ----------------------------------------------------------------------------
 
@@ -349,7 +368,8 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 /// assert_eq!(numbers, vec!(7, 6, 5, 4, 3, 2, 1, 0));
 /// ```
 pub fn sort_by<T, F>(slice: &mut [T], compare: F)
-	where F: FnMut(&T, &T) -> Ordering
+where
+	F: FnMut(&T, &T) -> Ordering,
 {
 	sort_move_by(slice, compare);
 }
@@ -362,8 +382,9 @@ pub fn sort_by<T, F>(slice: &mut [T], compare: F)
 /// assert_eq!(numbers, vec!(7, 6, 5, 4, 3, 2, 1, 0));
 /// ```
 pub fn sort_by_key<T, K, F>(slice: &mut [T], mut key: F)
-	where K: Ord,
-	      F: FnMut(&T) -> K
+where
+	K: Ord,
+	F: FnMut(&T) -> K,
 {
 	sort_by(slice, |a, b| key(a).cmp(&key(b)));
 }

@@ -31,11 +31,15 @@ fn generate_integers(rng: &mut rand::StdRng, length: usize, disorder_factor: f32
 }
 
 fn generate_strings(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<String> {
-	generate_integers(rng, length, disorder_factor).iter().map(|&x| format!("{:0100}", x)).collect()
+	generate_integers(rng, length, disorder_factor)
+		.iter()
+		.map(|&x| format!("{:0100}", x))
+		.collect()
 }
 
 fn time_sort_ms<T: Clone, Sorter>(num_best_of: usize, unsorted: &Vec<T>, mut sorter: Sorter) -> (f32, Vec<T>)
-	where Sorter: FnMut(&mut Vec<T>)
+where
+	Sorter: FnMut(&mut Vec<T>),
 {
 	let mut best_ns = None;
 	let mut sorted = Vec::new();
@@ -60,43 +64,46 @@ fn get_bench_disorders() -> Vec<f32> {
 		out_min + (out_max - out_min) * ((x - in_min) as f32) / ((in_max - in_min) as f32)
 	}
 
-	(0..BENCH_RESOLUTION_START).map(    |x| remap(x, 0, BENCH_RESOLUTION_START, 0.0, BENCH_RESOLUTION_CUTOFF)).chain(
-	(0..(BENCH_RESOLUTION_END + 1)).map(|x| remap(x, 0, BENCH_RESOLUTION_END,   BENCH_RESOLUTION_CUTOFF, 1.0))
-	).collect()
+	(0..BENCH_RESOLUTION_START)
+		.map(|x| remap(x, 0, BENCH_RESOLUTION_START, 0.0, BENCH_RESOLUTION_CUTOFF))
+		.chain((0..(BENCH_RESOLUTION_END + 1)).map(|x| remap(x, 0, BENCH_RESOLUTION_END, BENCH_RESOLUTION_CUTOFF, 1.0)))
+		.collect()
 }
 
-fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
-                            num_best_of: usize,
-                            length: usize,
-                            length_str: &str,
-                            element_type_short: &str,
-                            element_type_long: &str,
-                            mut generator: G)
-	where T: std::fmt::Debug + Clone + std::cmp::Ord,
-	      G: FnMut(&mut rand::StdRng, usize, f32) -> Vec<T>
+fn benchmark_and_plot<T, G>(
+	rng: &mut rand::StdRng,
+	num_best_of: usize,
+	length: usize,
+	length_str: &str,
+	element_type_short: &str,
+	element_type_long: &str,
+	mut generator: G,
+) where
+	T: std::fmt::Debug + Clone + std::cmp::Ord,
+	G: FnMut(&mut rand::StdRng, usize, f32) -> Vec<T>,
 {
 	let bench_disorders = get_bench_disorders();
 	let mut pb = ProgressBar::new(bench_disorders.len() as u64);
 	pb.message(&format!("Benchmarking {} {}: ", length_str, element_type_long));
 
-	let mut std_ms_list         = vec![];
-	let mut pdq_ms_list         = vec![];
-	let mut quicker_ms_list     = vec![];
-	let mut dmsort_ms_list      = vec![];
+	let mut std_ms_list = vec![];
+	let mut pdq_ms_list = vec![];
+	let mut quicker_ms_list = vec![];
+	let mut dmsort_ms_list = vec![];
 	let mut dmsort_speedup_list = vec![];
 
 	for &disorder_factor in &bench_disorders {
 		let vec = generator(rng, length, disorder_factor);
-		let (std_ms,     std_sorted)     = time_sort_ms(num_best_of, &vec, |x| x.sort());
-		let (pdq_ms,     pdq_sorted)     = time_sort_ms(num_best_of, &vec, |x| x.sort_unstable());
+		let (std_ms, std_sorted) = time_sort_ms(num_best_of, &vec, |x| x.sort());
+		let (pdq_ms, pdq_sorted) = time_sort_ms(num_best_of, &vec, |x| x.sort_unstable());
 		let (quicker_ms, quicker_sorted) = time_sort_ms(num_best_of, &vec, |x| quickersort::sort(x));
-		let (dmsort_ms,  dmsort_sorted)  = time_sort_ms(num_best_of, &vec, |x| dmsort::sort(x));
+		let (dmsort_ms, dmsort_sorted) = time_sort_ms(num_best_of, &vec, |x| dmsort::sort(x));
 
 		let fastest_competitor_ms = std_ms.min(pdq_ms).min(quicker_ms);
 
-		assert_eq!(pdq_sorted,     std_sorted);
+		assert_eq!(pdq_sorted, std_sorted);
 		assert_eq!(quicker_sorted, std_sorted);
-		assert_eq!(dmsort_sorted,  std_sorted);
+		assert_eq!(dmsort_sorted, std_sorted);
 
 		std_ms_list.push(std_ms);
 		pdq_ms_list.push(pdq_ms);
@@ -112,54 +119,94 @@ fn benchmark_and_plot<T, G>(rng: &mut rand::StdRng,
 
 	use gnuplot::*;
 	{
-
 		let mut figure = Figure::new();
-		figure.set_terminal("pngcairo", &format!("images/comparisons_{}_{}.png", length_str, element_type_short));
-		figure.axes2d()
-		.set_legend(Graph(1.0), Graph(0.05), &[Placement(AlignRight, AlignBottom)], &[])
-		.set_border(false, &[Left, Bottom], &[])
-		.set_x_ticks(Some((Auto, 0)), &[Mirror(false), Format("%.0f %%")], &[TextColor("#808080")])
-		.set_y_ticks(Some((Auto, 0)), &[Mirror(false)], &[TextColor("#808080")])
-		.set_x_grid(true)
-		.set_y_grid(true)
-		.set_title(&format!("Sorting {} {}", length_str, element_type_long), &[])
-		.set_x_label("Disorder", &[])
-		.set_y_label("ms", &[])
-		.lines(&disorder_percentages, &std_ms_list,     &[Caption("Vec::sort"),       Color("#FF0000"), LineWidth(2.0)])
-		.lines(&disorder_percentages, &pdq_ms_list,     &[Caption("pdqsort"),         Color("#BBBB00"), LineWidth(2.0)])
-		.lines(&disorder_percentages, &quicker_ms_list, &[Caption("quickersort"),     Color("#00BB00"), LineWidth(2.0)])
-		.lines(&disorder_percentages, &dmsort_ms_list,  &[Caption("Drop-Merge Sort"), Color("#4444FF"), LineWidth(2.0)]);
+		figure.set_terminal(
+			"pngcairo",
+			&format!("images/comparisons_{}_{}.png", length_str, element_type_short),
+		);
+		figure
+			.axes2d()
+			.set_legend(Graph(1.0), Graph(0.05), &[Placement(AlignRight, AlignBottom)], &[])
+			.set_border(false, &[Left, Bottom], &[])
+			.set_x_ticks(
+				Some((Auto, 0)),
+				&[Mirror(false), Format("%.0f %%")],
+				&[TextColor("#808080")],
+			)
+			.set_y_ticks(Some((Auto, 0)), &[Mirror(false)], &[TextColor("#808080")])
+			.set_x_grid(true)
+			.set_y_grid(true)
+			.set_title(&format!("Sorting {} {}", length_str, element_type_long), &[])
+			.set_x_label("Disorder", &[])
+			.set_y_label("ms", &[])
+			.lines(
+				&disorder_percentages,
+				&std_ms_list,
+				&[Caption("Vec::sort"), Color("#FF0000"), LineWidth(2.0)],
+			)
+			.lines(
+				&disorder_percentages,
+				&pdq_ms_list,
+				&[Caption("pdqsort"), Color("#BBBB00"), LineWidth(2.0)],
+			)
+			.lines(
+				&disorder_percentages,
+				&quicker_ms_list,
+				&[Caption("quickersort"), Color("#00BB00"), LineWidth(2.0)],
+			)
+			.lines(
+				&disorder_percentages,
+				&dmsort_ms_list,
+				&[Caption("Drop-Merge Sort"), Color("#4444FF"), LineWidth(2.0)],
+			);
 		figure.show();
 	}
 	{
-
 		let mut figure = Figure::new();
-		figure.set_terminal("pngcairo", &format!("images/speedup_{}_{}.png", length_str, element_type_short));
-		figure.axes2d()
-		.set_legend(Graph(1.0), Graph(0.05), &[Placement(AlignRight, AlignBottom)], &[])
-		.set_border(false, &[Left, Bottom], &[])
-		.set_x_ticks(Some((Auto, 0)), &[Mirror(false), Format("%.0f %%")], &[TextColor("#808080")])
-		.set_y_ticks(Some((Auto, 0)), &[Mirror(false)], &[TextColor("#808080")])
-		.set_x_grid(true)
-		.set_y_grid(true)
-		.set_title(&format!("Drop-Merge sort speedup when sorting {} {}", length_str, element_type_long), &[])
-		.set_x_label("Disorder", &[])
-		.set_y_label("Speedup over fastest competitor", &[])
-		.set_x_range(Fix(0.0), Fix(50.0))
-		.set_y_range(Fix(0.0), Fix(8.0))
-		.lines(&[0.0, 100.0], &[1.0, 1.0], &[Color("#606060")])
-		.lines(&disorder_percentages, &dmsort_speedup_list, &[Color("#4444FF"), LineWidth(2.0)]);
+		figure.set_terminal(
+			"pngcairo",
+			&format!("images/speedup_{}_{}.png", length_str, element_type_short),
+		);
+		figure
+			.axes2d()
+			.set_legend(Graph(1.0), Graph(0.05), &[Placement(AlignRight, AlignBottom)], &[])
+			.set_border(false, &[Left, Bottom], &[])
+			.set_x_ticks(
+				Some((Auto, 0)),
+				&[Mirror(false), Format("%.0f %%")],
+				&[TextColor("#808080")],
+			)
+			.set_y_ticks(Some((Auto, 0)), &[Mirror(false)], &[TextColor("#808080")])
+			.set_x_grid(true)
+			.set_y_grid(true)
+			.set_title(
+				&format!(
+					"Drop-Merge sort speedup when sorting {} {}",
+					length_str, element_type_long
+				),
+				&[],
+			)
+			.set_x_label("Disorder", &[])
+			.set_y_label("Speedup over fastest competitor", &[])
+			.set_x_range(Fix(0.0), Fix(50.0))
+			.set_y_range(Fix(0.0), Fix(8.0))
+			.lines(&[0.0, 100.0], &[1.0, 1.0], &[Color("#606060")])
+			.lines(
+				&disorder_percentages,
+				&dmsort_speedup_list,
+				&[Color("#4444FF"), LineWidth(2.0)],
+			);
 		figure.show();
 	}
 }
 
 /// Benchmark worst-case input for Drop-Merge sort
 fn bench_evil() {
-	let evil_input : Vec<_> = (100..1000000).chain(0..100).collect();
-	let (std_ms,     std_sorted)     = time_sort_ms(10, &evil_input, |x| x.sort());
-	let (pdq_ms,     pdq_sorted)     = time_sort_ms(10, &evil_input, |x| x.sort_unstable());
+	let evil_input: Vec<_> = (100..1000000).chain(0..100).collect();
+	let (std_ms, std_sorted) = time_sort_ms(10, &evil_input, |x| x.sort());
+	let (pdq_ms, pdq_sorted) = time_sort_ms(10, &evil_input, |x| x.sort_unstable());
 	let (quicker_ms, quicker_sorted) = time_sort_ms(10, &evil_input, |x| quickersort::sort(x));
-	let (drop_ms,    drop_sorted)    = time_sort_ms(10, &evil_input, |x| dmsort::sort(x));
+	let (drop_ms, drop_sorted) = time_sort_ms(10, &evil_input, |x| dmsort::sort(x));
 	// let (drop_ms,    drop_sorted)    = time_sort_ms(10, &evil_input, |x| {dmsort::sort_copy(x); ()});
 
 	assert_eq!(std_sorted, drop_sorted);
@@ -174,6 +221,7 @@ fn bench_evil() {
 
 #[test]
 #[ignore]
+#[rustfmt::skip]
 fn benchmarks() {
 	bench_evil();
 
