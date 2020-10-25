@@ -1,7 +1,6 @@
 // Copyright (c) 2017 Emil Ernerfeldt
 
 use std::cmp::Ordering;
-use std::mem;
 use std::ptr;
 
 // ----------------------------------------------------------------------------
@@ -216,8 +215,9 @@ impl<'a, T> Drop for DmSorter<'a, T> {
 #[inline(always)]
 unsafe fn unsafe_push<T>(vec: &mut Vec<T>, value: &T) {
 	let old_len = vec.len();
-	vec.push(mem::uninitialized::<T>());
+	vec.reserve(1);
 	ptr::copy_nonoverlapping(value, vec.get_unchecked_mut(old_len), 1);
+	vec.set_len(old_len + 1);
 }
 
 #[inline(always)]
@@ -303,10 +303,9 @@ fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
 				// Append s.slice[read..(read + num_backtracked)] to s.dropped:
 				{
 					let old_len = s.dropped.len();
-					for _ in 0..num_backtracked {
-						s.dropped.push(mem::uninitialized::<T>());
-					}
+					s.dropped.reserve(num_backtracked);
 					ptr::copy_nonoverlapping(s.slice.get_unchecked(s.write), s.dropped.get_unchecked_mut(old_len), num_backtracked);
+					s.dropped.set_len(old_len + num_backtracked);
 				}
 
 				num_dropped_in_row = 0;
