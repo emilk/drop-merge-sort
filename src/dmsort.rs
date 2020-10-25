@@ -236,7 +236,7 @@ where
 		}
 
 		let mut s = DmSorter {
-			slice: slice,
+			slice,
 			dropped: Vec::new(),
 			write: 0,
 		};

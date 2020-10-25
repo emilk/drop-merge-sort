@@ -37,7 +37,7 @@ fn generate_strings(rng: &mut StdRng, length: usize, disorder_factor: f32) -> Ve
 		.collect()
 }
 
-fn time_sort_ms<T: Clone, Sorter>(num_best_of: usize, unsorted: &Vec<T>, mut sorter: Sorter) -> (f32, Vec<T>)
+fn time_sort_ms<T: Clone, Sorter>(num_best_of: usize, unsorted: &[T], mut sorter: Sorter) -> (f32, Vec<T>)
 where
 	Sorter: FnMut(&mut Vec<T>),
 {
@@ -45,7 +45,7 @@ where
 	let mut sorted = Vec::new();
 
 	for _ in 0..num_best_of {
-		let mut vec_clone: Vec<T> = unsorted.clone();
+		let mut vec_clone: Vec<T> = unsorted.to_vec();
 		let start_time_ns = time::precise_time_ns();
 		sorter(&mut vec_clone);
 		let duration_ns = time::precise_time_ns() - start_time_ns;
@@ -201,6 +201,7 @@ fn benchmark_and_plot<T, G>(
 }
 
 /// Benchmark worst-case input for Drop-Merge sort
+#[allow(clippy::stable_sort_primitive)]
 fn bench_evil() {
 	let evil_input: Vec<_> = (100..1000000).chain(0..100).collect();
 	let (std_ms, std_sorted) = time_sort_ms(10, &evil_input, |x| x.sort());
