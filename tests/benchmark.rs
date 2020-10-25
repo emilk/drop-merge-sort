@@ -7,7 +7,7 @@ extern crate rand;
 extern crate time;
 
 use pbr::ProgressBar;
-use rand::{Rng, SeedableRng, StdRng};
+use rand::{rngs::StdRng, Rng};
 
 static BENCH_RESOLUTION_START: usize = 10;
 static BENCH_RESOLUTION_END: usize = 99 * 5;
@@ -18,10 +18,10 @@ static BENCH_RESOLUTION_CUTOFF: f32 = 0.01;
 type Integer = i32;
 
 /// Returns a mostly-sorted array with `disorder_factor` fraction of elements with random values.
-fn generate_integers(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<Integer> {
+fn generate_integers(rng: &mut StdRng, length: usize, disorder_factor: f32) -> Vec<Integer> {
 	(0..length)
 		.map(|i| {
-			if rng.next_f32() < disorder_factor {
+			if rng.gen::<f32>() < disorder_factor {
 				rng.gen_range(0 as Integer, length as Integer)
 			} else {
 				i as Integer
@@ -30,7 +30,7 @@ fn generate_integers(rng: &mut rand::StdRng, length: usize, disorder_factor: f32
 		.collect()
 }
 
-fn generate_strings(rng: &mut rand::StdRng, length: usize, disorder_factor: f32) -> Vec<String> {
+fn generate_strings(rng: &mut StdRng, length: usize, disorder_factor: f32) -> Vec<String> {
 	generate_integers(rng, length, disorder_factor)
 		.iter()
 		.map(|&x| format!("{:0100}", x))
@@ -71,7 +71,7 @@ fn get_bench_disorders() -> Vec<f32> {
 }
 
 fn benchmark_and_plot<T, G>(
-	rng: &mut rand::StdRng,
+	rng: &mut StdRng,
 	num_best_of: usize,
 	length: usize,
 	length_str: &str,
@@ -80,7 +80,7 @@ fn benchmark_and_plot<T, G>(
 	mut generator: G,
 ) where
 	T: std::fmt::Debug + Clone + std::cmp::Ord,
-	G: FnMut(&mut rand::StdRng, usize, f32) -> Vec<T>,
+	G: FnMut(&mut StdRng, usize, f32) -> Vec<T>,
 {
 	let bench_disorders = get_bench_disorders();
 	let mut pb = ProgressBar::new(bench_disorders.len() as u64);
@@ -225,8 +225,9 @@ fn bench_evil() {
 fn benchmarks() {
 	bench_evil();
 
-	let seed: &[_] = &[0];
-	let mut rng: StdRng = SeedableRng::from_seed(seed);
+	use rand::SeedableRng;;
+	let seed = [0; 32];
+	let mut rng: StdRng = StdRng::from_seed(seed);
 
 	benchmark_and_plot(&mut rng, 1000,        100, "100",  "i32",    "32-bit integers",  generate_integers);
 	benchmark_and_plot(&mut rng, 1000,        100, "100",  "string", "100-byte strings", generate_strings);
