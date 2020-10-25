@@ -1,3 +1,6 @@
+[![Latest version](https://img.shields.io/crates/v/dmsort.svg)](https://crates.io/crates/dmsort)
+[![Documentation](https://docs.rs/dmsort/badge.svg)](https://docs.rs/dmsort)
+
 # Abstract
 This is an implementation of a novel [adaptive sorting](https://en.wikipedia.org/wiki/Adaptive_sort) algorithm optimized for nearly-sorted data. Drop-Merge sort is especially useful for when >80% of the data is already in-order, and the unsorted elements are evenly distributed. An example use-case would be re-sorting an already sorted list after minor modifications.
 
