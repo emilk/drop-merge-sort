@@ -23,6 +23,5 @@ bench = false
 [dev-dependencies]
 gnuplot = "0.0.22"
 pbr = "1"
-quickersort = "3"
 rand = "0.7"
 time = "0.1"
