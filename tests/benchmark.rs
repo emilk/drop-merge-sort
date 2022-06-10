@@ -21,6 +21,7 @@ fn generate_integers(rng: &mut StdRng, length: usize, disorder_factor: f32) -> V
 	(0..length)
 		.map(|i| {
 			if rng.gen::<f32>() < disorder_factor {
+				#[allow(clippy::unnecessary_cast)]
 				rng.gen_range(0 as Integer, length as Integer)
 			} else {
 				i as Integer
@@ -213,7 +214,7 @@ fn bench_evil() {
 fn benchmarks() {
 	bench_evil();
 
-	use rand::SeedableRng;;
+	use rand::SeedableRng;
 	let seed = [0; 32];
 	let mut rng: StdRng = StdRng::from_seed(seed);
 

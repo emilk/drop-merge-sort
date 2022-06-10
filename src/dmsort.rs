@@ -266,7 +266,7 @@ where
 				|| compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 1)) != Ordering::Less
 			{
 				// The element is order - keep it:
-				unsafe_copy(&mut s.slice, read, s.write);
+				unsafe_copy(s.slice, read, s.write);
 				read += 1;
 				s.write += 1;
 				num_dropped_in_row = 0;
@@ -278,7 +278,7 @@ where
 				{
 					// Quick undo: drop previously accepted element, and overwrite with new one:
 					unsafe_push(&mut s.dropped, s.slice.get_unchecked(s.write - 1));
-					unsafe_copy(&mut s.slice, read, s.write - 1);
+					unsafe_copy(s.slice, read, s.write - 1);
 					read += 1;
 					continue;
 				}
@@ -346,7 +346,7 @@ where
 			{
 				let last_dropped = s.dropped.get_unchecked(old_len - 1);
 				while 0 < s.write && compare(last_dropped, s.slice.get_unchecked(s.write - 1)) == Ordering::Less {
-					unsafe_copy(&mut s.slice, s.write - 1, back - 1);
+					unsafe_copy(s.slice, s.write - 1, back - 1);
 					back -= 1;
 					s.write -= 1;
 				}

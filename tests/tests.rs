@@ -101,7 +101,7 @@ fn test_unwind() {
 
 			dmsort::sort_by(&mut data, |a, b| {
 				if num_comparisons == break_after_this_many_comparisons {
-					panic!(scheuled_panic_code.clone());
+					panic!("{}", scheuled_panic_code.clone());
 				}
 				num_comparisons += 1;
 				a.id.cmp(&b.id)
