@@ -31,6 +31,24 @@ jobs:
         with:
           command: test
 
+  miri:
+    name: Miri
+    runs-on: ubuntu-latest
+    env:
+      MIRIFLAGS: -Zmiri-tag-raw-pointers
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: miri
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: miri
+          args: test
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
