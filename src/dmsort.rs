@@ -205,7 +205,7 @@ impl<'a, T> Drop for DmSorter<'a, T> {
 			// This code will only run on stack-unwind (panic).
 
 			// Move back all elements into the slice:
-			ptr::copy_nonoverlapping(self.dropped.as_ptr(), &mut self.slice[self.write], self.dropped.len());
+			ptr::copy_nonoverlapping(self.dropped.as_ptr(), self.slice.as_mut_ptr().add(self.write), self.dropped.len());
 
 			// Make sure the objects aren't destroyed when self.dropped is dropped (avoid-double-free).
 			self.dropped.set_len(0);
@@ -217,13 +217,14 @@ impl<'a, T> Drop for DmSorter<'a, T> {
 unsafe fn unsafe_push<T>(vec: &mut Vec<T>, value: &T) {
 	let old_len = vec.len();
 	vec.reserve(1);
-	ptr::copy_nonoverlapping(value, vec.get_unchecked_mut(old_len), 1);
+	ptr::copy_nonoverlapping(value, vec.as_mut_ptr().add(old_len), 1);
 	vec.set_len(old_len + 1);
 }
 
 #[inline(always)]
 unsafe fn unsafe_copy<T>(slice: &mut [T], source: usize, dest: usize) {
-	ptr::copy_nonoverlapping(slice.get_unchecked(source), slice.get_unchecked_mut(dest), 1);
+	let ptr = slice.as_mut_ptr();
+	ptr::copy_nonoverlapping(ptr.add(source), ptr.add(dest), 1);
 }
 
 fn sort_move_by<T, F>(slice: &mut [T], mut compare: F)
@@ -266,7 +267,9 @@ where
 				|| compare(s.slice.get_unchecked(read), s.slice.get_unchecked(s.write - 1)) != Ordering::Less
 			{
 				// The element is order - keep it:
-				unsafe_copy(s.slice, read, s.write);
+				if read != s.write {
+					unsafe_copy(s.slice, read, s.write);
+				}
 				read += 1;
 				s.write += 1;
 				num_dropped_in_row = 0;
@@ -317,8 +320,8 @@ where
 						let old_len = s.dropped.len();
 						s.dropped.reserve(num_backtracked);
 						ptr::copy_nonoverlapping(
-							s.slice.get_unchecked(s.write),
-							s.dropped.get_unchecked_mut(old_len),
+							s.slice.as_ptr().add(s.write),
+							s.dropped.as_mut_ptr().add(old_len),
 							num_backtracked,
 						);
 						s.dropped.set_len(old_len + num_backtracked);
