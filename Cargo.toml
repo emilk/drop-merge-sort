@@ -1,18 +1,17 @@
 [package]
 name = "dmsort"
-version = "1.0.2-alpha.0"
+version = "1.0.2"
 authors = ["Emil Ernerfeldt <emilernerfeldt@gmail.com>"]
 description = """
 Fast adaptive sorting for when most of your data is already in order.
 dmsort can be 2-5 times faster than Rust's default sort when more than 80% of the elements are already in order.
 """
-documentation = "https://emilk.github.io/drop-merge-sort/dmsort/index.html"
 repository = "https://github.com/emilk/drop-merge-sort"
 readme = "README.md"
 keywords = ["sorting", "sort", "adaptive"]
 categories = ["algorithms"]
 license = "MIT"
-include = [ "**/*.rs", "Cargo.toml", ]
+include = [ "**/*.rs", "Cargo.toml", "LICENSE"]
 
 [lib]
 name = "dmsort"

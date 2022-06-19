@@ -1,3 +1,6 @@
+# 1.0.2 - 2022-06-19
+Fix some bugs found by Miri (https://github.com/emilk/drop-merge-sort/pull/21).
+
 # 1.0.0 - 2018-07-18
 Replace dependency on Crate [pdqsort](https://github.com/orlp/pdqsort) with [`sort_unstable`](https://doc.rust-lang.org/std/primitive.slice.html#method.sort_unstable).
 
